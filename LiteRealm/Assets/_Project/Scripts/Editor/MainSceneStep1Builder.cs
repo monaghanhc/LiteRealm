@@ -422,20 +422,30 @@ namespace LiteRealm.EditorTools
                 return;
             }
 
+            System.Type volumeType = System.Type.GetType("UnityEngine.Rendering.Volume, Unity.RenderPipelines.Core.Runtime");
+            if (volumeType == null)
+            {
+                return;
+            }
+
             GameObject volumeGo = new GameObject("Global Volume");
             volumeGo.transform.SetParent(appRoot.transform, false);
-            Volume volume = volumeGo.AddComponent<Volume>();
-            volume.isGlobal = true;
-            volume.priority = 1f;
-            volume.weight = 1f;
+            Component volumeComponent = volumeGo.AddComponent(volumeType);
 
-            SerializedObject volumeSo = new SerializedObject(volume);
+            SerializedObject volumeSo = new SerializedObject(volumeComponent);
             SerializedProperty profileProp = volumeSo.FindProperty("m_Profile");
             if (profileProp != null)
             {
                 profileProp.objectReferenceValue = profileAsset;
                 volumeSo.ApplyModifiedPropertiesWithoutUndo();
             }
+            SerializedProperty isGlobalProp = volumeSo.FindProperty("m_IsGlobal");
+            if (isGlobalProp != null) isGlobalProp.boolValue = true;
+            SerializedProperty priorityProp = volumeSo.FindProperty("m_Priority");
+            if (priorityProp != null) priorityProp.floatValue = 1f;
+            SerializedProperty weightProp = volumeSo.FindProperty("m_Weight");
+            if (weightProp != null) weightProp.floatValue = 1f;
+            volumeSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static InteractionPromptUI CreatePromptCanvas()

@@ -164,9 +164,9 @@ namespace LiteRealm.EditorTools
                     HitscanRifle rifleComponent = prefab.GetComponent<HitscanRifle>();
                     if (rifleComponent != null)
                     {
-                        SerializedObject so = new SerializedObject(rifleComponent);
-                        SetObject(so, "bloodImpactPrefab", bloodImpactPrefab);
-                        so.ApplyModifiedPropertiesWithoutUndo();
+                        SerializedObject rifleSo = new SerializedObject(rifleComponent);
+                        SetObject(rifleSo, "bloodImpactPrefab", bloodImpactPrefab);
+                        rifleSo.ApplyModifiedPropertiesWithoutUndo();
                     }
                 }
                 return prefab;
