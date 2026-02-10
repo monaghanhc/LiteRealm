@@ -17,6 +17,7 @@ namespace LiteRealm.Player
 
         [Header("References")]
         [SerializeField] private ExplorationInput input;
+        [SerializeField] private PlayerStats playerStats;
         [SerializeField] private InventoryComponent inventory;
         [SerializeField] private QuestManager questManager;
         [SerializeField] private InteractionPromptUI interactionPrompt;
@@ -39,6 +40,11 @@ namespace LiteRealm.Player
                 input = GetComponent<ExplorationInput>();
             }
 
+            if (playerStats == null)
+            {
+                playerStats = GetComponent<PlayerStats>();
+            }
+
             if (interactionCamera == null)
             {
                 interactionCamera = Camera.main;
@@ -47,6 +53,13 @@ namespace LiteRealm.Player
 
         private void Update()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                currentInteractable = null;
+                interactionPrompt?.Hide();
+                return;
+            }
+
             FindInteractable();
             if (ReadInteractPressedThisFrame() && currentInteractable != null)
             {

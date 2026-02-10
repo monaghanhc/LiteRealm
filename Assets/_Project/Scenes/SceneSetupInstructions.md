@@ -7,7 +7,7 @@
 - Main menu: **New Game**, **Resume** (enabled only when `savegame.json` exists), **Settings**, **Quit**.
 - Clicking **Resume** loads `Main` and auto-loads save data through `SaveSystem`.
 - Settings are saved with PlayerPrefs and applied when the game starts.
-- From in-game Game Over screen you can choose **Restart** or **Main Menu**.
+- On player death, a **YOU DIED** screen appears and auto-returns to Main Menu (buttons still allow manual Restart/Main Menu when configured).
 
 ## 1) Packages
 - Required: **AI Navigation** (`com.unity.ai.navigation`) for NavMesh workflows.

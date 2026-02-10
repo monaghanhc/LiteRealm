@@ -20,6 +20,9 @@ namespace LiteRealm.Player
         [SerializeField] private KeyCode fireFallbackKey = KeyCode.Mouse0;
         [SerializeField] private KeyCode aimFallbackKey = KeyCode.Mouse1;
 
+        [Header("Optional")]
+        [SerializeField] private PlayerStats playerStats;
+
         private bool initialized;
         private bool usingInputSystem;
 
@@ -41,6 +44,10 @@ namespace LiteRealm.Player
 
         private void Awake()
         {
+            if (playerStats == null)
+            {
+                playerStats = GetComponent<PlayerStats>();
+            }
             Initialize();
         }
 
@@ -57,6 +64,10 @@ namespace LiteRealm.Player
 
         public Vector2 ReadMove()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                return Vector2.zero;
+            }
 #if ENABLE_INPUT_SYSTEM
             if (usingInputSystem && moveAction != null)
             {
@@ -72,6 +83,10 @@ namespace LiteRealm.Player
 
         public Vector2 ReadLookDelta()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                return Vector2.zero;
+            }
 #if ENABLE_INPUT_SYSTEM
             if (usingInputSystem && lookAction != null)
             {

@@ -888,6 +888,14 @@ namespace LiteRealm.EditorTools
                         : "Survival HUD has missing bars/text or runtime references.",
                     "Assign HP/Stamina/Hunger/Thirst bars, time text, player stats, and day-night refs."));
 
+                GameOverController gameOver = FindComponentInScene<GameOverController>(scene);
+                bool hasGameOver = gameOver != null;
+                report.Results.Add(BuildStep2Check(
+                    "GAMEOVER_CONTROLLER",
+                    hasGameOver,
+                    hasGameOver ? "GameOverController found." : "GameOverController missing.",
+                    "Add GameOverController to UI Canvas or rely on runtime bootstrap fallback."));
+
                 SpawnerZone[] spawners = FindComponentsInScene<SpawnerZone>(scene);
                 bool spawnerNightScaling = spawners.Length > 0;
                 for (int i = 0; i < spawners.Length; i++)

@@ -100,6 +100,11 @@ namespace LiteRealm.Player
 
         private void Update()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                return;
+            }
+
             HandleCrouchInput();
             HandleMovement(Time.deltaTime);
             HandleFootsteps(Time.deltaTime);
@@ -108,6 +113,11 @@ namespace LiteRealm.Player
         private void HandleMovement(float deltaTime)
         {
             if (characterController == null)
+            {
+                return;
+            }
+
+            if (playerStats != null && playerStats.IsDead)
             {
                 return;
             }

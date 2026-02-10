@@ -46,6 +46,10 @@ namespace LiteRealm.Player
         [SerializeField] [Range(0f, 1f)] private float lowResourceRegenMultiplier = 0.35f;
         [SerializeField] private float regenDelayAfterUse = 0.2f;
 
+        [Header("Zero Resource Penalty")]
+        [SerializeField] private float zeroHungerHealthDamagePerSecond = 1.5f;
+        [SerializeField] private float zeroThirstHealthDamagePerSecond = 2f;
+
         public event Action<PlayerStatsSnapshot> StatsChanged;
         public event Action Died;
 
@@ -59,6 +63,7 @@ namespace LiteRealm.Player
         public Transform DamageTransform => transform;
 
         private float lastStaminaUseTime;
+        private bool deathEventRaised;
 
         private void Awake()
         {
@@ -66,6 +71,7 @@ namespace LiteRealm.Player
             CurrentStamina = maxStamina;
             CurrentHunger = maxHunger;
             CurrentThirst = maxThirst;
+            deathEventRaised = false;
             NotifyChanged();
         }
 
@@ -81,13 +87,8 @@ namespace LiteRealm.Player
                 return;
             }
 
-            CurrentHealth = Mathf.Max(0f, CurrentHealth - damageInfo.Amount);
+            ApplyHealthLoss(damageInfo.Amount);
             NotifyChanged();
-
-            if (CurrentHealth <= 0f)
-            {
-                Died?.Invoke();
-            }
         }
 
         public void RestoreFromConsumable(float health, float stamina, float hunger, float thirst)
@@ -96,6 +97,10 @@ namespace LiteRealm.Player
             CurrentStamina = Mathf.Clamp(CurrentStamina + Mathf.Max(0f, stamina), 0f, maxStamina);
             CurrentHunger = Mathf.Clamp(CurrentHunger + Mathf.Max(0f, hunger), 0f, maxHunger);
             CurrentThirst = Mathf.Clamp(CurrentThirst + Mathf.Max(0f, thirst), 0f, maxThirst);
+            if (CurrentHealth > 0f)
+            {
+                deathEventRaised = false;
+            }
             NotifyChanged();
         }
 
@@ -125,6 +130,10 @@ namespace LiteRealm.Player
             }
 
             CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + amount);
+            if (CurrentHealth > 0f)
+            {
+                deathEventRaised = false;
+            }
             NotifyChanged();
         }
 
@@ -174,6 +183,7 @@ namespace LiteRealm.Player
             CurrentHunger = Mathf.Clamp(state.Hunger, 0f, maxHunger);
             CurrentThirst = Mathf.Clamp(state.Thirst, 0f, maxThirst);
             GodMode = state.GodMode;
+            deathEventRaised = CurrentHealth <= 0f;
             NotifyChanged();
         }
 
@@ -207,9 +217,29 @@ namespace LiteRealm.Player
             float previousHunger = CurrentHunger;
             float previousThirst = CurrentThirst;
             float previousStamina = CurrentStamina;
+            float previousHealth = CurrentHealth;
 
             CurrentHunger = Mathf.Max(0f, CurrentHunger - hungerDrainPerSecond * deltaTime);
             CurrentThirst = Mathf.Max(0f, CurrentThirst - thirstDrainPerSecond * deltaTime);
+
+            if (!GodMode)
+            {
+                float attritionDamage = 0f;
+                if (CurrentHunger <= 0f)
+                {
+                    attritionDamage += zeroHungerHealthDamagePerSecond * deltaTime;
+                }
+
+                if (CurrentThirst <= 0f)
+                {
+                    attritionDamage += zeroThirstHealthDamagePerSecond * deltaTime;
+                }
+
+                if (attritionDamage > 0f)
+                {
+                    ApplyHealthLoss(attritionDamage);
+                }
+            }
 
             bool canRegenStamina = (Time.time - lastStaminaUseTime) >= regenDelayAfterUse;
             if (canRegenStamina && CurrentStamina < maxStamina)
@@ -225,9 +255,25 @@ namespace LiteRealm.Player
 
             if (!Mathf.Approximately(previousHunger, CurrentHunger)
                 || !Mathf.Approximately(previousThirst, CurrentThirst)
-                || !Mathf.Approximately(previousStamina, CurrentStamina))
+                || !Mathf.Approximately(previousStamina, CurrentStamina)
+                || !Mathf.Approximately(previousHealth, CurrentHealth))
             {
                 NotifyChanged();
+            }
+        }
+
+        private void ApplyHealthLoss(float amount)
+        {
+            if (amount <= 0f || IsDead)
+            {
+                return;
+            }
+
+            CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+            if (CurrentHealth <= 0f && !deathEventRaised)
+            {
+                deathEventRaised = true;
+                Died?.Invoke();
             }
         }
 

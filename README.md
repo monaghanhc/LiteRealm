@@ -17,6 +17,7 @@ Open this repository directly as a Unity project (it includes `Assets/`, `Packag
 5. You now start in `MainMenu`:
    - `New Game` always available.
    - `Resume` is enabled only when `savegame.json` exists.
+6. When player health reaches zero, gameplay locks, a `YOU DIED` screen appears, then returns to `MainMenu`.
 
 ## What the Bootstrap Does
 

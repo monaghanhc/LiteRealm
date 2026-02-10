@@ -21,6 +21,7 @@ namespace LiteRealm.Combat
         [SerializeField] private Camera aimCamera;
         [SerializeField] private PlayerCameraController cameraController;
         [SerializeField] private GameEventHub eventHub;
+        [SerializeField] private PlayerStats playerStats;
         [SerializeField] private LayerMask hitMask = ~0;
 
         public event Action<WeaponBase> ActiveWeaponChanged;
@@ -43,6 +44,11 @@ namespace LiteRealm.Combat
             if (cameraController == null && aimCamera != null)
             {
                 cameraController = aimCamera.GetComponent<PlayerCameraController>();
+            }
+
+            if (playerStats == null)
+            {
+                playerStats = GetComponent<PlayerStats>();
             }
 
             if (weapons.Count == 0)
@@ -82,6 +88,11 @@ namespace LiteRealm.Combat
 
         private void Update()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                return;
+            }
+
             if (ActiveWeapon == null)
             {
                 return;
@@ -139,6 +150,11 @@ namespace LiteRealm.Combat
 
         public bool TryFireActiveWeapon()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                return false;
+            }
+
             if (ActiveWeapon == null)
             {
                 return false;
@@ -179,6 +195,11 @@ namespace LiteRealm.Combat
 
         public bool TryReloadActiveWeapon()
         {
+            if (playerStats != null && playerStats.IsDead)
+            {
+                return false;
+            }
+
             if (ActiveWeapon == null)
             {
                 return false;
