@@ -30,6 +30,7 @@ namespace LiteRealm.EditorTools
 
             EnsureCanvasComponents(canvasRoot);
             EnsureReticle(canvasRoot);
+            EnsurePauseMenu(canvasRoot);
             EnsureDayNight(appRoot, scene);
             EnsureSurvivalHud(canvasRoot, scene);
             EnsureInteractionPrompt(canvasRoot, scene);
@@ -419,6 +420,135 @@ namespace LiteRealm.EditorTools
             scaler.matchWidthOrHeight = 0.5f;
             scaler.referencePixelsPerUnit = 100f;
             GetOrAddComponent<GraphicRaycaster>(canvasRoot);
+        }
+
+        public static void EnsurePauseMenu(GameObject canvasRoot)
+        {
+            GameObject pausePanel = GetOrCreateUiChild(canvasRoot.transform, "PausePanel");
+            RectTransform pausePanelRect = pausePanel.GetComponent<RectTransform>();
+            pausePanelRect.anchorMin = Vector2.zero;
+            pausePanelRect.anchorMax = Vector2.one;
+            pausePanelRect.offsetMin = Vector2.zero;
+            pausePanelRect.offsetMax = Vector2.zero;
+            Image pauseBg = GetOrAddComponent<Image>(pausePanel);
+            pauseBg.color = new Color(0.05f, 0.05f, 0.08f, 0.88f);
+            pauseBg.raycastTarget = true;
+            pausePanel.SetActive(false);
+
+            GameObject mainMenu = GetOrCreateUiChild(pausePanel.transform, "PauseMainMenu");
+            RectTransform mainMenuRect = mainMenu.GetComponent<RectTransform>();
+            mainMenuRect.anchorMin = new Vector2(0.5f, 0.5f);
+            mainMenuRect.anchorMax = new Vector2(0.5f, 0.5f);
+            mainMenuRect.pivot = new Vector2(0.5f, 0.5f);
+            mainMenuRect.sizeDelta = new Vector2(320f, 360f);
+            mainMenuRect.anchoredPosition = Vector2.zero;
+
+            Text pausedTitle = CreateOrGetText(mainMenu.transform, "Title", "Paused", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(280f, 44f), new Vector2(0f, 140f), 32, TextAnchor.MiddleCenter, Color.white);
+            pausedTitle.fontStyle = FontStyle.Bold;
+
+            Button resumeBtn = CreatePauseButton(mainMenu.transform, "ResumeButton", "Resume", 0.28f);
+            Button settingsBtn = CreatePauseButton(mainMenu.transform, "SettingsButton", "Settings", 0.12f);
+            Button exitToMenuBtn = CreatePauseButton(mainMenu.transform, "ExitToMainMenuButton", "Exit to Main Menu", -0.04f);
+            Button exitDesktopBtn = CreatePauseButton(mainMenu.transform, "ExitDesktopButton", "Exit to Desktop", -0.20f);
+            SetButtonText(resumeBtn, "Resume");
+            SetButtonText(settingsBtn, "Settings");
+            SetButtonText(exitToMenuBtn, "Exit to Main Menu");
+            SetButtonText(exitDesktopBtn, "Exit to Desktop");
+
+            GameObject settingsPanel = GetOrCreateUiChild(pausePanel.transform, "PauseSettingsPanel");
+            RectTransform settingsPanelRect = settingsPanel.GetComponent<RectTransform>();
+            settingsPanelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            settingsPanelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            settingsPanelRect.pivot = new Vector2(0.5f, 0.5f);
+            settingsPanelRect.sizeDelta = new Vector2(360f, 340f);
+            settingsPanelRect.anchoredPosition = Vector2.zero;
+            settingsPanel.SetActive(false);
+
+            Text settingsTitle = CreateOrGetText(settingsPanel.transform, "SettingsTitle", "Settings", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 36f), new Vector2(0f, 130f), 28, TextAnchor.MiddleCenter, Color.white);
+            settingsTitle.fontStyle = FontStyle.Bold;
+
+            Slider masterSlider = CreateOrGetBar(settingsPanel.transform, "MasterVolume", "Master", new Vector2(180f, -30f), new Color(0.4f, 0.5f, 0.7f));
+            Slider musicSlider = CreateOrGetBar(settingsPanel.transform, "MusicVolume", "Music", new Vector2(180f, -70f), new Color(0.4f, 0.5f, 0.7f));
+            Slider sfxSlider = CreateOrGetBar(settingsPanel.transform, "SfxVolume", "SFX", new Vector2(180f, -110f), new Color(0.4f, 0.5f, 0.7f));
+            masterSlider.minValue = 0f;
+            masterSlider.maxValue = 1f;
+            masterSlider.value = 1f;
+            musicSlider.minValue = 0f;
+            musicSlider.maxValue = 1f;
+            musicSlider.value = 1f;
+            sfxSlider.minValue = 0f;
+            sfxSlider.maxValue = 1f;
+            sfxSlider.value = 1f;
+
+            GameObject backBtnGo = GetOrCreateUiChild(settingsPanel.transform, "BackButton");
+            RectTransform backBtnRect = backBtnGo.GetComponent<RectTransform>();
+            backBtnRect.anchorMin = new Vector2(0.5f, 0.5f);
+            backBtnRect.anchorMax = new Vector2(0.5f, 0.5f);
+            backBtnRect.pivot = new Vector2(0.5f, 0.5f);
+            backBtnRect.sizeDelta = new Vector2(200f, 44f);
+            backBtnRect.anchoredPosition = new Vector2(0f, -130f);
+            GetOrAddComponent<Image>(backBtnGo).color = new Color(0.25f, 0.25f, 0.3f, 1f);
+            Button settingsBackBtn = GetOrAddComponent<Button>(backBtnGo);
+            SetButtonText(settingsBackBtn, "Back");
+
+            SettingsMenuController settingsController = GetOrAddComponent<SettingsMenuController>(settingsPanel);
+            SerializedObject settingsSo = new SerializedObject(settingsController);
+            SetObject(settingsSo, "masterVolumeSlider", masterSlider);
+            SetObject(settingsSo, "musicVolumeSlider", musicSlider);
+            SetObject(settingsSo, "sfxVolumeSlider", sfxSlider);
+            SetObject(settingsSo, "backButton", settingsBackBtn);
+            settingsSo.ApplyModifiedPropertiesWithoutUndo();
+
+            PauseMenuController pauseController = GetOrAddComponent<PauseMenuController>(canvasRoot);
+            SerializedObject pauseSo = new SerializedObject(pauseController);
+            SetObject(pauseSo, "pausePanel", pausePanel);
+            SetObject(pauseSo, "mainMenu", mainMenu);
+            SetObject(pauseSo, "settingsPanel", settingsPanel);
+            SetObject(pauseSo, "resumeButton", resumeBtn);
+            SetObject(pauseSo, "settingsButton", settingsBtn);
+            SetObject(pauseSo, "exitToMainMenuButton", exitToMenuBtn);
+            SetObject(pauseSo, "exitDesktopButton", exitDesktopBtn);
+            SetObject(pauseSo, "settingsController", settingsController);
+            SetObject(pauseSo, "settingsBackButton", settingsBackBtn);
+            pauseSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Button CreatePauseButton(Transform parent, string name, string label, float anchorY)
+        {
+            GameObject go = GetOrCreateUiChild(parent, name);
+            RectTransform rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, anchorY);
+            rect.anchorMax = new Vector2(0.5f, anchorY);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(280f, 44f);
+            rect.anchoredPosition = Vector2.zero;
+            GetOrAddComponent<Image>(go).color = new Color(0.22f, 0.22f, 0.28f, 1f);
+            return GetOrAddComponent<Button>(go);
+        }
+
+        private static void SetButtonText(Button button, string label)
+        {
+            if (button == null) return;
+            Transform t = button.transform.Find("Text");
+            if (t != null)
+            {
+                Text txt = t.GetComponent<Text>();
+                if (txt != null) txt.text = label;
+                return;
+            }
+            GameObject textGo = new GameObject("Text", typeof(RectTransform));
+            textGo.transform.SetParent(button.transform, false);
+            RectTransform textRect = textGo.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            Text textComponent = textGo.AddComponent<Text>();
+            textComponent.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            textComponent.fontSize = 22;
+            textComponent.alignment = TextAnchor.MiddleCenter;
+            textComponent.color = Color.white;
+            textComponent.text = label;
         }
 
         public static void EnsureReticle(GameObject canvasRoot)

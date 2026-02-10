@@ -78,6 +78,7 @@ namespace LiteRealm.EditorTools
             GameObject canvasRoot = GetOrCreateRoot(scene, "UI Canvas");
             MainSceneStep3SurvivalBuilder.EnsureCanvasComponents(canvasRoot);
             MainSceneStep3SurvivalBuilder.EnsureReticle(canvasRoot);
+            MainSceneStep3SurvivalBuilder.EnsurePauseMenu(canvasRoot);
             MainSceneStep3SurvivalBuilder.EnsureGameOverPanel(canvasRoot, scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
