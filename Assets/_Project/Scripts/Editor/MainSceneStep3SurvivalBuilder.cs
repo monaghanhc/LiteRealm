@@ -408,7 +408,7 @@ namespace LiteRealm.EditorTools
             return text;
         }
 
-        private static void EnsureCanvasComponents(GameObject canvasRoot)
+        public static void EnsureCanvasComponents(GameObject canvasRoot)
         {
             Canvas canvas = GetOrAddComponent<Canvas>(canvasRoot);
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -421,7 +421,7 @@ namespace LiteRealm.EditorTools
             GetOrAddComponent<GraphicRaycaster>(canvasRoot);
         }
 
-        private static void EnsureReticle(GameObject canvasRoot)
+        public static void EnsureReticle(GameObject canvasRoot)
         {
             Transform reticleRoot = GetOrCreateUiChild(canvasRoot.transform, "Reticle").transform;
             RectTransform rootRect = reticleRoot.GetComponent<RectTransform>();
