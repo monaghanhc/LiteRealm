@@ -11,6 +11,7 @@ namespace LiteRealm.Combat
         public LayerMask HitMask;
         public GameObject Instigator;
         public GameEventHub EventHub;
+        public bool IsAiming;
     }
 
     public abstract class WeaponBase : MonoBehaviour
@@ -29,6 +30,8 @@ namespace LiteRealm.Combat
         [SerializeField] private float recoilPitch = 1f;
         [SerializeField] private float recoilYaw = 0.3f;
         [SerializeField] private float loudness = 18f;
+        [SerializeField] [Range(0.1f, 1f)] private float adsSpreadMultiplier = 0.4f;
+        [SerializeField] [Range(0.1f, 1f)] private float adsRecoilMultiplier = 0.75f;
 
         [Header("Presentation")]
         [SerializeField] private Transform muzzlePoint;
@@ -58,6 +61,21 @@ namespace LiteRealm.Combat
         public Transform MuzzlePoint => muzzlePoint != null ? muzzlePoint : transform;
         public GameObject ImpactEffectPrefab => impactEffectPrefab;
         public bool IsReloading { get; private set; }
+
+        public float GetSpreadForAim(bool aiming)
+        {
+            return SpreadDegrees * (aiming ? adsSpreadMultiplier : 1f);
+        }
+
+        public float GetRecoilPitchForAim(bool aiming)
+        {
+            return RecoilPitch * (aiming ? adsRecoilMultiplier : 1f);
+        }
+
+        public float GetRecoilYawForAim(bool aiming)
+        {
+            return RecoilYaw * (aiming ? adsRecoilMultiplier : 1f);
+        }
 
         private float nextAllowedShotTime;
         private AudioClip _runtimeShootClip;

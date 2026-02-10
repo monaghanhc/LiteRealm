@@ -151,6 +151,7 @@ Assign all references in inspectors.
 - Crouch toggle: `C`
 - Interact: `E`
 - Toggle camera FP/TP: `V`
+- Aim Down Sights: `Mouse1` (hold)
 - Shoot: `Mouse0`
 - Reload: `R`
 - Weapon swap: `1`,`2`,`3` or mouse wheel

@@ -13,7 +13,8 @@ namespace LiteRealm.Combat
             }
 
             Ray centerRay = context.AimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            Vector3 shootDirection = ApplySpread(centerRay.direction, context.AimCamera.transform);
+            float spread = GetSpreadForAim(context.IsAiming);
+            Vector3 shootDirection = ApplySpread(centerRay.direction, context.AimCamera.transform, spread);
             Ray shotRay = new Ray(centerRay.origin, shootDirection);
 
             if (!Physics.Raycast(shotRay, out RaycastHit hit, Range, context.HitMask, QueryTriggerInteraction.Ignore))
@@ -39,9 +40,8 @@ namespace LiteRealm.Combat
             }
         }
 
-        private Vector3 ApplySpread(Vector3 forward, Transform cameraTransform)
+        private Vector3 ApplySpread(Vector3 forward, Transform cameraTransform, float spread)
         {
-            float spread = SpreadDegrees;
             if (spread <= 0f)
             {
                 return forward.normalized;

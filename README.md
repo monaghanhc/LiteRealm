@@ -43,6 +43,7 @@ If missing, open `Window > Package Manager` and install them, then run bootstrap
 - `Left Shift`: Sprint
 - `Left Ctrl`: Crouch
 - `V`: Toggle first/third person
+- `Mouse1` (hold): Aim down sights
 - `E`: Interact (pickup/open/talk)
 - `Mouse0`: Fire
 - `R`: Reload

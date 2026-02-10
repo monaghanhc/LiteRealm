@@ -2,6 +2,7 @@
 
 ## 0) Main Menu
 - Run **Tools > LiteRealm > Scenes > Build Main Menu Scene** to create `Assets/_Project/Scenes/MainMenu.unity` (auto-built by bootstrap if missing).
+- So that **Play** starts at the main menu, run **Tools > LiteRealm > Scenes > Set Main Menu as Play Start Scene** once. (Building the Main Menu scene does this automatically; use the menu item if Play still opens another scene.)
 - The builder adds/reorders Build Settings so `MainMenu` is index 0 and `Main` is index 1.
 - Main menu: **New Game**, **Resume** (enabled only when `savegame.json` exists), **Settings**, **Quit**.
 - Clicking **Resume** loads `Main` and auto-loads save data through `SaveSystem`.
@@ -150,6 +151,7 @@ Assign all references in inspectors.
 - Crouch toggle: `C`
 - Interact: `E`
 - Toggle camera FP/TP: `V`
+- Aim Down Sights: `Mouse1` (hold)
 - Shoot: `Mouse0`
 - Reload: `R`
 - Weapon swap: `1`,`2`,`3` or mouse wheel

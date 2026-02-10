@@ -155,7 +155,8 @@ namespace LiteRealm.Combat
                 AimCamera = aimCamera,
                 HitMask = effectiveMask,
                 Instigator = gameObject,
-                EventHub = eventHub
+                EventHub = eventHub,
+                IsAiming = cameraController != null ? cameraController.IsAiming : (explorationInput != null && explorationInput.AimHeld())
             };
 
             bool fired = ActiveWeapon.TryFire(fireContext);
@@ -166,8 +167,10 @@ namespace LiteRealm.Combat
 
             if (cameraController != null)
             {
-                float yawKick = UnityEngine.Random.Range(-ActiveWeapon.RecoilYaw, ActiveWeapon.RecoilYaw);
-                cameraController.AddRecoil(ActiveWeapon.RecoilPitch, yawKick);
+                float recoilYaw = ActiveWeapon.GetRecoilYawForAim(fireContext.IsAiming);
+                float recoilPitch = ActiveWeapon.GetRecoilPitchForAim(fireContext.IsAiming);
+                float yawKick = UnityEngine.Random.Range(-recoilYaw, recoilYaw);
+                cameraController.AddRecoil(recoilPitch, yawKick);
             }
 
             AmmoChanged?.Invoke(ActiveWeapon.CurrentAmmo, ActiveWeapon.MagazineSize);

@@ -23,6 +23,15 @@ namespace LiteRealm.CameraSystem
         [SerializeField] private float maxPitch = 80f;
         [SerializeField] private float followSmoothTime = 0.045f;
         [SerializeField] private float rotationSmooth = 16f;
+        [SerializeField] [Range(0.1f, 1f)] private float aimSensitivityMultiplier = 0.72f;
+
+        [Header("Aim Down Sights")]
+        [SerializeField] private float defaultFov = 65f;
+        [SerializeField] private float adsFov = 48f;
+        [SerializeField] private float adsTransitionSpeed = 14f;
+        [SerializeField] private Vector3 firstPersonAimOffset = new Vector3(0f, 0.02f, 0f);
+        [SerializeField] private Vector3 thirdPersonAimShoulderOffset = new Vector3(0.3f, 0.15f, 0f);
+        [SerializeField] private float thirdPersonAimDistance = 2.1f;
 
         [Header("Collision")]
         [SerializeField] private LayerMask collisionMask = ~0;
@@ -31,6 +40,7 @@ namespace LiteRealm.CameraSystem
 
         [Header("Fallback Input (Legacy Input Manager)")]
         [SerializeField] private KeyCode toggleViewFallbackKey = KeyCode.V;
+        [SerializeField] private KeyCode aimFallbackKey = KeyCode.Mouse1;
 
         [Header("Cursor")]
         [SerializeField] private bool lockCursor = true;
@@ -44,11 +54,22 @@ namespace LiteRealm.CameraSystem
         private float recoilPitch;
         private float recoilYaw;
         private Vector3 currentVelocity;
+        private Camera cachedCamera;
+        private bool aiming;
+        private float aimBlend;
 
         public bool IsFirstPerson => firstPerson;
+        public bool IsAiming => aiming;
+        public float AimBlend => aimBlend;
 
         private void Awake()
         {
+            cachedCamera = GetComponent<Camera>();
+            if (cachedCamera != null)
+            {
+                defaultFov = cachedCamera.fieldOfView;
+            }
+
             if (input == null && target != null)
             {
                 input = target.GetComponent<ExplorationInput>();
@@ -80,6 +101,11 @@ namespace LiteRealm.CameraSystem
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
+
+            if (cachedCamera != null)
+            {
+                cachedCamera.fieldOfView = defaultFov;
+            }
         }
 
         private void Update()
@@ -89,11 +115,13 @@ namespace LiteRealm.CameraSystem
                 firstPerson = !firstPerson;
             }
 
+            aiming = ReadAimHeld();
             Vector2 lookDelta = ReadLookDelta();
-            yaw += lookDelta.x * lookSensitivity.x;
+            float sensitivityScale = aiming ? aimSensitivityMultiplier : 1f;
+            yaw += lookDelta.x * lookSensitivity.x * sensitivityScale;
 
             float yInput = invertLookY ? lookDelta.y : -lookDelta.y;
-            pitch = Mathf.Clamp(pitch + yInput * lookSensitivity.y, minPitch, maxPitch);
+            pitch = Mathf.Clamp(pitch + yInput * lookSensitivity.y * sensitivityScale, minPitch, maxPitch);
 
             recoilPitch = Mathf.Lerp(recoilPitch, 0f, recoilReturnSpeed * Time.deltaTime);
             recoilYaw = Mathf.Lerp(recoilYaw, 0f, recoilReturnSpeed * Time.deltaTime);
@@ -108,19 +136,30 @@ namespace LiteRealm.CameraSystem
 
             Quaternion lookRotation = Quaternion.Euler(pitch + recoilPitch, yaw + recoilYaw, 0f);
             target.rotation = Quaternion.Euler(0f, yaw, 0f);
+            float targetAim = aiming ? 1f : 0f;
+            aimBlend = Mathf.MoveTowards(aimBlend, targetAim, adsTransitionSpeed * Time.deltaTime);
+
+            if (cachedCamera != null)
+            {
+                float targetFov = Mathf.Lerp(defaultFov, adsFov, aimBlend);
+                cachedCamera.fieldOfView = Mathf.Lerp(cachedCamera.fieldOfView, targetFov, adsTransitionSpeed * Time.deltaTime);
+            }
 
             if (firstPerson)
             {
                 Vector3 firstPersonPivot = target.position + thirdPersonPivotOffset;
-                Vector3 desiredFirstPersonPosition = firstPersonPivot + lookRotation * firstPersonOffset;
+                Vector3 currentOffset = Vector3.Lerp(firstPersonOffset, firstPersonAimOffset, aimBlend);
+                Vector3 desiredFirstPersonPosition = firstPersonPivot + lookRotation * currentOffset;
                 transform.position = Vector3.SmoothDamp(transform.position, desiredFirstPersonPosition, ref currentVelocity, followSmoothTime);
                 transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, rotationSmooth * Time.deltaTime);
                 return;
             }
 
             Vector3 pivot = target.position + thirdPersonPivotOffset;
-            Vector3 shoulderPivot = pivot + lookRotation * thirdPersonShoulderOffset;
-            Vector3 desiredThirdPerson = shoulderPivot + lookRotation * (Vector3.back * thirdPersonDistance);
+            Vector3 shoulderOffset = Vector3.Lerp(thirdPersonShoulderOffset, thirdPersonAimShoulderOffset, aimBlend);
+            float distanceTarget = Mathf.Lerp(thirdPersonDistance, thirdPersonAimDistance, aimBlend);
+            Vector3 shoulderPivot = pivot + lookRotation * shoulderOffset;
+            Vector3 desiredThirdPerson = shoulderPivot + lookRotation * (Vector3.back * distanceTarget);
 
             Vector3 toDesired = desiredThirdPerson - shoulderPivot;
             float distance = toDesired.magnitude;
@@ -169,6 +208,16 @@ namespace LiteRealm.CameraSystem
             }
 
             return Input.GetKeyDown(toggleViewFallbackKey);
+        }
+
+        private bool ReadAimHeld()
+        {
+            if (input != null)
+            {
+                return input.AimHeld();
+            }
+
+            return Input.GetKey(aimFallbackKey);
         }
 
         private static float NormalizePitch(float angle)
