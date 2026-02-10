@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using UnityEditor;
 
 namespace LiteRealm.EditorTools
@@ -39,6 +39,10 @@ namespace LiteRealm.EditorTools
             }
 
             DoctorReport report = ProjectDoctorRunner.RunChecks();
+            if (ProjectDoctorRunner.TryAutoFixLootSetup(report))
+            {
+                report = ProjectDoctorRunner.RunChecks();
+            }
             ProjectDoctorRunner.LogReport(report);
         }
     }

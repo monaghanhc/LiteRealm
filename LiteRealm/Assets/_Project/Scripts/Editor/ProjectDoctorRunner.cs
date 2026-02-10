@@ -1159,6 +1159,51 @@ namespace LiteRealm.EditorTools
             return success;
         }
 
+        /// <summary>
+        /// If the report has failed loot-related checks, runs Step 4 (Looting Loop) to create missing assets.
+        /// Returns true if Step 4 was run so the caller can re-run checks.
+        /// </summary>
+        public static bool TryAutoFixLootSetup(DoctorReport report)
+        {
+            if (report == null || report.Results == null)
+            {
+                return false;
+            }
+
+            bool needsStep4 = false;
+            for (int i = 0; i < report.Results.Count; i++)
+            {
+                DoctorCheckResult r = report.Results[i];
+                if (r == null || r.Passed)
+                {
+                    continue;
+                }
+                string code = r.Code ?? string.Empty;
+                if (code == "LOOT_TABLES_EXIST" || code == "LOOT_ITEMS_EXIST" || code == "LOOT_CONTAINER_PREFAB_EXISTS")
+                {
+                    needsStep4 = true;
+                    break;
+                }
+            }
+
+            if (!needsStep4)
+            {
+                return false;
+            }
+
+            try
+            {
+                MainSceneStep4LootBuilder.ApplyStep4();
+                AssetDatabase.Refresh();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[ProjectDoctor] Auto-fix (Step 4) failed: {ex.Message}");
+                return false;
+            }
+        }
+
         private static DoctorCheckResult BuildStep2Check(string code, bool passed, string message, string fixHint)
         {
             return new DoctorCheckResult
