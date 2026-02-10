@@ -1,4 +1,4 @@
-﻿using LiteRealm.Quests;
+using LiteRealm.Quests;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -57,6 +57,9 @@ namespace LiteRealm.UI
                 root.SetActive(true);
             }
 
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
             Refresh();
         }
 
@@ -69,6 +72,9 @@ namespace LiteRealm.UI
 
             currentNpc = null;
             questManager = null;
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
         private void OnAcceptClicked()

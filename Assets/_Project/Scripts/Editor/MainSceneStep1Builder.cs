@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -35,6 +36,7 @@ namespace LiteRealm.EditorTools
             scene.name = "Main";
 
             Terrain terrain = CreateTerrain();
+            GameObject app = new GameObject("__App");
             GameObject world = new GameObject("World");
 
             CreateWater(world.transform);
@@ -51,6 +53,10 @@ namespace LiteRealm.EditorTools
             GameObject player = CreatePlayer(spawn.transform.position);
             Camera cam = CreateCamera(player.transform);
             CreateSun();
+            CreateGlobalVolume(app);
+            GameObject gameplay = new GameObject("Gameplay");
+            player.transform.SetParent(gameplay.transform);
+            cam.transform.SetParent(gameplay.transform);
             InteractionPromptUI prompt = CreatePromptCanvas();
             CreateEventSystem();
             ConfigureInteraction(player, cam, prompt);
@@ -394,14 +400,42 @@ namespace LiteRealm.EditorTools
             GameObject lightGo = new GameObject("Directional Light");
             Light light = lightGo.AddComponent<Light>();
             light.type = LightType.Directional;
-            light.intensity = 1.08f;
-            light.color = new Color(1f, 0.96f, 0.9f);
+            light.intensity = 1.2f;
+            light.color = new Color(1f, 0.98f, 0.95f);
+            light.shadowStrength = 1f;
+            light.shadowBias = 0.05f;
+            light.shadowNormalBias = 0.4f;
             light.shadows = LightShadows.Soft;
             lightGo.transform.rotation = Quaternion.Euler(45f, -26f, 0f);
             RenderSettings.sun = light;
             RenderSettings.fog = true;
             RenderSettings.fogColor = new Color(0.68f, 0.76f, 0.82f);
             RenderSettings.fogDensity = 0.0015f;
+        }
+
+        private static void CreateGlobalVolume(GameObject appRoot)
+        {
+            string profilePath = "Assets/Settings/DefaultVolumeProfile.asset";
+            Object profileAsset = AssetDatabase.LoadAssetAtPath<Object>(profilePath);
+            if (profileAsset == null)
+            {
+                return;
+            }
+
+            GameObject volumeGo = new GameObject("Global Volume");
+            volumeGo.transform.SetParent(appRoot.transform, false);
+            Volume volume = volumeGo.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 1f;
+            volume.weight = 1f;
+
+            SerializedObject volumeSo = new SerializedObject(volume);
+            SerializedProperty profileProp = volumeSo.FindProperty("m_Profile");
+            if (profileProp != null)
+            {
+                profileProp.objectReferenceValue = profileAsset;
+                volumeSo.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         private static InteractionPromptUI CreatePromptCanvas()

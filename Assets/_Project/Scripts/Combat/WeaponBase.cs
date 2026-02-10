@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using LiteRealm.Core;
 using UnityEngine;
@@ -35,7 +35,10 @@ namespace LiteRealm.Combat
         [SerializeField] private ParticleSystem muzzleFlash;
         [SerializeField] private AudioSource shootAudioSource;
         [SerializeField] private AudioClip shootClip;
+        [SerializeField] private AudioClip reloadClip;
+        [SerializeField] private AudioClip impactClip;
         [SerializeField] private GameObject impactEffectPrefab;
+        [SerializeField] private GameObject bloodImpactPrefab;
 
         public event Action<WeaponBase> Fired;
         public event Action<WeaponBase> AmmoChanged;
@@ -134,19 +137,36 @@ namespace LiteRealm.Combat
 
         protected void SpawnImpact(Vector3 position, Vector3 normal)
         {
-            if (ImpactEffectPrefab == null)
+            if (ImpactEffectPrefab != null)
             {
-                return;
+                Quaternion rotation = Quaternion.LookRotation(normal);
+                GameObject effect = Instantiate(ImpactEffectPrefab, position, rotation);
+                Destroy(effect, 2f);
             }
 
-            Quaternion rotation = Quaternion.LookRotation(normal);
-            GameObject effect = Instantiate(ImpactEffectPrefab, position, rotation);
-            Destroy(effect, 2f);
+            if (impactClip != null)
+            {
+                AudioSource.PlayClipAtPoint(impactClip, position, 0.5f);
+            }
+        }
+
+        protected void SpawnBloodImpact(Vector3 position, Vector3 normal)
+        {
+            if (bloodImpactPrefab != null)
+            {
+                Quaternion rotation = Quaternion.LookRotation(normal);
+                GameObject effect = Instantiate(bloodImpactPrefab, position, rotation);
+                Destroy(effect, 3f);
+            }
         }
 
         private IEnumerator ReloadRoutine()
         {
             IsReloading = true;
+            if (shootAudioSource != null && reloadClip != null)
+            {
+                shootAudioSource.PlayOneShot(reloadClip);
+            }
             yield return new WaitForSeconds(ReloadDuration);
             CurrentAmmo = MagazineSize;
             IsReloading = false;

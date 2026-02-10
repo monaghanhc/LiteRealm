@@ -1,4 +1,4 @@
-﻿using LiteRealm.Core;
+using LiteRealm.Core;
 using UnityEngine;
 
 namespace LiteRealm.Combat
@@ -31,9 +31,12 @@ namespace LiteRealm.Combat
                     shootDirection,
                     context.Instigator,
                     WeaponId));
+                SpawnBloodImpact(hit.point, hit.normal);
             }
-
-            SpawnImpact(hit.point, hit.normal);
+            else
+            {
+                SpawnImpact(hit.point, hit.normal);
+            }
         }
 
         private Vector3 ApplySpread(Vector3 forward, Transform cameraTransform)

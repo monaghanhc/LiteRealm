@@ -22,6 +22,7 @@ namespace LiteRealm.EditorTools
         private const string BossPrefabPath = "Assets/_Project/Prefabs/Enemies/Boss.prefab";
         private const string ProjectilePrefabPath = "Assets/_Project/Prefabs/Enemies/BossProjectile.prefab";
         private const string RiflePrefabPath = "Assets/_Project/Prefabs/Weapons/Rifle.prefab";
+        private const string BloodImpactPrefabPath = "Assets/_Project/Prefabs/Effects/BloodImpact.prefab";
         private const string BossTokenPath = "Assets/_Project/ScriptableObjects/Items/Item_BossToken.asset";
 
         [MenuItem("Tools/LiteRealm/Scenes/Apply Step 2 (Combat + Enemies)")]
@@ -31,6 +32,7 @@ namespace LiteRealm.EditorTools
             ProjectDoctorRunner.EnsureRequiredTagsAndLayers(out _);
             EnsureDirectory("Assets/_Project/Prefabs/Enemies");
             EnsureDirectory("Assets/_Project/Prefabs/Weapons");
+            EnsureDirectory("Assets/_Project/Prefabs/Effects");
             EnsureDirectory("Assets/_Project/ScriptableObjects/Items");
 
             if (!File.Exists(ProjectDoctorConstants.MainScenePath))
@@ -59,7 +61,8 @@ namespace LiteRealm.EditorTools
             GameObject projectilePrefab = GetOrCreateProjectilePrefab();
             GameObject zombiePrefab = GetOrCreateZombiePrefab();
             GameObject bossPrefab = GetOrCreateBossPrefab(projectilePrefab, bossToken);
-            GameObject riflePrefab = GetOrCreateRiflePrefab();
+            GameObject bloodPrefab = GetOrCreateBloodImpactPrefab();
+            GameObject riflePrefab = GetOrCreateRiflePrefab(bloodPrefab);
 
             Transform player = FindPlayer(scene);
             if (player == null)
@@ -109,11 +112,63 @@ namespace LiteRealm.EditorTools
             };
         }
 
-        private static GameObject GetOrCreateRiflePrefab()
+        private static GameObject GetOrCreateBloodImpactPrefab()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BloodImpactPrefabPath);
+            if (prefab != null)
+            {
+                return prefab;
+            }
+
+            GameObject root = new GameObject("BloodImpact");
+            ParticleSystem ps = root.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.duration = 0.4f;
+            main.loop = false;
+            main.startLifetime = 0.5f;
+            main.startSpeed = 4f;
+            main.startSize = 0.12f;
+            main.startColor = new Color(0.75f, 0.05f, 0.05f);
+            main.gravityModifier = 0.6f;
+            main.maxParticles = 24;
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 12, 18) });
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Hemisphere;
+            shape.radius = 0.15f;
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
+
+            prefab = PrefabUtility.SaveAsPrefabAsset(root, BloodImpactPrefabPath);
+            Object.DestroyImmediate(root);
+            return prefab;
+        }
+
+        private static GameObject GetOrCreateRiflePrefab(GameObject bloodImpactPrefab)
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflePrefabPath);
             if (prefab != null)
             {
+                if (bloodImpactPrefab != null)
+                {
+                    HitscanRifle rifleComponent = prefab.GetComponent<HitscanRifle>();
+                    if (rifleComponent != null)
+                    {
+                        SerializedObject so = new SerializedObject(rifleComponent);
+                        SetObject(so, "bloodImpactPrefab", bloodImpactPrefab);
+                        so.ApplyModifiedPropertiesWithoutUndo();
+                    }
+                }
                 return prefab;
             }
 
@@ -150,6 +205,10 @@ namespace LiteRealm.EditorTools
             SetObject(so, "muzzlePoint", muzzle);
             SetObject(so, "muzzleFlash", muzzleFx);
             SetObject(so, "shootAudioSource", audioSource);
+            if (bloodImpactPrefab != null)
+            {
+                SetObject(so, "bloodImpactPrefab", bloodImpactPrefab);
+            }
             so.ApplyModifiedPropertiesWithoutUndo();
 
             prefab = PrefabUtility.SaveAsPrefabAsset(root, RiflePrefabPath);

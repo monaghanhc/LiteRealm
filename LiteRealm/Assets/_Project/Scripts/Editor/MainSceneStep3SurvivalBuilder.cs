@@ -32,6 +32,7 @@ namespace LiteRealm.EditorTools
             EnsureDayNight(appRoot, scene);
             EnsureSurvivalHud(canvasRoot, scene);
             EnsureInteractionPrompt(canvasRoot, scene);
+            EnsureGameOverPanel(canvasRoot, scene);
             EnsureSpawnerNightScaling(worldRoot, appRoot);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -136,6 +137,72 @@ namespace LiteRealm.EditorTools
             SetObject(so, "weaponManager", weaponManager);
             SetObject(so, "dayNight", dayNight);
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void EnsureGameOverPanel(GameObject canvasRoot, Scene scene)
+        {
+            Transform panelRoot = GetOrCreateUiChild(canvasRoot.transform, "GameOverPanel").transform;
+            RectTransform panelRect = panelRoot.GetComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+
+            Image bg = GetOrAddComponent<Image>(panelRoot.gameObject);
+            bg.color = new Color(0.1f, 0f, 0f, 0.85f);
+            bg.raycastTarget = true;
+
+            Text titleText = CreateOrGetText(
+                panelRoot,
+                "GameOverText",
+                new Vector2(0.5f, 0.6f),
+                new Vector2(0.5f, 0.6f),
+                new Vector2(400f, 60f),
+                Vector2.zero,
+                42,
+                TextAnchor.MiddleCenter,
+                Color.red);
+            titleText.text = "GAME OVER";
+            titleText.fontStyle = FontStyle.Bold;
+
+            GameObject buttonGo = GetOrCreateUiChild(panelRoot, "RestartButton");
+            RectTransform buttonRect = buttonGo.GetComponent<RectTransform>();
+            buttonRect.anchorMin = new Vector2(0.5f, 0.35f);
+            buttonRect.anchorMax = new Vector2(0.5f, 0.35f);
+            buttonRect.pivot = new Vector2(0.5f, 0.5f);
+            buttonRect.sizeDelta = new Vector2(200f, 44f);
+            buttonRect.anchoredPosition = Vector2.zero;
+
+            Image buttonImage = GetOrAddComponent<Image>(buttonGo);
+            buttonImage.color = new Color(0.25f, 0.25f, 0.25f, 1f);
+
+            Button button = GetOrAddComponent<Button>(buttonGo);
+
+            Text buttonText = CreateOrGetText(
+                buttonGo.transform,
+                "Text",
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                22,
+                TextAnchor.MiddleCenter,
+                Color.white);
+            buttonText.text = "Restart";
+
+            GameOverController gameOver = GetOrAddComponent<GameOverController>(canvasRoot);
+            SerializedObject goSo = new SerializedObject(gameOver);
+            SetObject(goSo, "gameOverPanel", panelRoot.gameObject);
+            SetObject(goSo, "restartButton", button);
+            SetObject(goSo, "gameOverText", titleText);
+            GameObject player = FindPlayer(scene);
+            if (player != null)
+            {
+                SetObject(goSo, "playerStats", player.GetComponent<PlayerStats>());
+            }
+            goSo.ApplyModifiedPropertiesWithoutUndo();
+
+            panelRoot.gameObject.SetActive(false);
         }
 
         private static void EnsureSpawnerNightScaling(GameObject worldRoot, GameObject appRoot)
