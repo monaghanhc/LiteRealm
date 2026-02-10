@@ -1,0 +1,22 @@
+{
+  "name": "LiteRealm.Tests.EditMode",
+  "rootNamespace": "LiteRealm.Tests.Editor",
+  "references": [
+    "Assembly-CSharp",
+    "Assembly-CSharp-Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

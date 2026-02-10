@@ -1,0 +1,19 @@
+{
+  "name": "LiteRealm.Tests.PlayMode",
+  "rootNamespace": "LiteRealm.Tests.PlayMode",
+  "references": [
+    "Assembly-CSharp"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

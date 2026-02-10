@@ -79,6 +79,8 @@ namespace LiteRealm.EditorTools
         public const string MainScenePath = "Assets/_Project/Scenes/Main.unity";
         public const string InputSystemPackage = "com.unity.inputsystem";
         public const string AiNavigationPackage = "com.unity.ai.navigation";
+        public const string UguiPackage = "com.unity.ugui";
+        public const string TestFrameworkPackage = "com.unity.test-framework";
         public const string CinemachinePackage = "com.unity.cinemachine";
 
         public const string AutoRunPrefKey = "LiteRealm.ProjectDoctor.AutoRun";
@@ -131,7 +133,9 @@ namespace LiteRealm.EditorTools
         public static readonly string[] RequiredPackageIds =
         {
             InputSystemPackage,
-            AiNavigationPackage
+            AiNavigationPackage,
+            UguiPackage,
+            TestFrameworkPackage
         };
 
         public static readonly string[] OptionalPackageIds =
