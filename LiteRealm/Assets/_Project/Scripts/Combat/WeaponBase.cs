@@ -60,11 +60,33 @@ namespace LiteRealm.Combat
         public bool IsReloading { get; private set; }
 
         private float nextAllowedShotTime;
+        private AudioClip _runtimeShootClip;
+        private AudioClip _runtimeReloadClip;
+        private AudioClip _runtimeImpactClip;
 
         protected virtual void Awake()
         {
             CurrentAmmo = MagazineSize;
             nextAllowedShotTime = 0f;
+            if (shootAudioSource != null && shootClip == null)
+            {
+                _runtimeShootClip = ProceduralAudio.CreateShootClip();
+            }
+            if (shootAudioSource != null && reloadClip == null)
+            {
+                _runtimeReloadClip = ProceduralAudio.CreateReloadClip();
+            }
+            if (impactClip == null)
+            {
+                _runtimeImpactClip = ProceduralAudio.CreateImpactClip();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_runtimeShootClip != null) Destroy(_runtimeShootClip);
+            if (_runtimeReloadClip != null) Destroy(_runtimeReloadClip);
+            if (_runtimeImpactClip != null) Destroy(_runtimeImpactClip);
         }
 
         public bool TryFire(WeaponFireContext context)
@@ -144,9 +166,10 @@ namespace LiteRealm.Combat
                 Destroy(effect, 2f);
             }
 
-            if (impactClip != null)
+            AudioClip clip = impactClip != null ? impactClip : _runtimeImpactClip;
+            if (clip != null)
             {
-                AudioSource.PlayClipAtPoint(impactClip, position, 0.5f);
+                AudioSource.PlayClipAtPoint(clip, position, 0.5f);
             }
         }
 
@@ -163,9 +186,10 @@ namespace LiteRealm.Combat
         private IEnumerator ReloadRoutine()
         {
             IsReloading = true;
-            if (shootAudioSource != null && reloadClip != null)
+            AudioClip reload = reloadClip != null ? reloadClip : _runtimeReloadClip;
+            if (shootAudioSource != null && reload != null)
             {
-                shootAudioSource.PlayOneShot(reloadClip);
+                shootAudioSource.PlayOneShot(reload);
             }
             yield return new WaitForSeconds(ReloadDuration);
             CurrentAmmo = MagazineSize;
@@ -180,9 +204,10 @@ namespace LiteRealm.Combat
                 muzzleFlash.Play();
             }
 
-            if (shootAudioSource != null && shootClip != null)
+            AudioClip shoot = shootClip != null ? shootClip : _runtimeShootClip;
+            if (shootAudioSource != null && shoot != null)
             {
-                shootAudioSource.PlayOneShot(shootClip);
+                shootAudioSource.PlayOneShot(shoot);
             }
         }
     }

@@ -139,7 +139,7 @@ namespace LiteRealm.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void EnsureGameOverPanel(GameObject canvasRoot, Scene scene)
+        public static void EnsureGameOverPanel(GameObject canvasRoot, Scene scene)
         {
             Transform panelRoot = GetOrCreateUiChild(canvasRoot.transform, "GameOverPanel").transform;
             RectTransform panelRect = panelRoot.GetComponent<RectTransform>();
@@ -190,10 +190,32 @@ namespace LiteRealm.EditorTools
                 Color.white);
             buttonText.text = "Restart";
 
+            GameObject mainMenuButtonGo = GetOrCreateUiChild(panelRoot, "MainMenuButton");
+            RectTransform mainMenuButtonRect = mainMenuButtonGo.GetComponent<RectTransform>();
+            mainMenuButtonRect.anchorMin = new Vector2(0.5f, 0.22f);
+            mainMenuButtonRect.anchorMax = new Vector2(0.5f, 0.22f);
+            mainMenuButtonRect.pivot = new Vector2(0.5f, 0.5f);
+            mainMenuButtonRect.sizeDelta = new Vector2(200f, 44f);
+            mainMenuButtonRect.anchoredPosition = Vector2.zero;
+            GetOrAddComponent<Image>(mainMenuButtonGo).color = new Color(0.25f, 0.25f, 0.25f, 1f);
+            Button mainMenuButton = GetOrAddComponent<Button>(mainMenuButtonGo);
+            Text mainMenuButtonText = CreateOrGetText(
+                mainMenuButtonGo.transform,
+                "Text",
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                22,
+                TextAnchor.MiddleCenter,
+                Color.white);
+            mainMenuButtonText.text = "Main Menu";
+
             GameOverController gameOver = GetOrAddComponent<GameOverController>(canvasRoot);
             SerializedObject goSo = new SerializedObject(gameOver);
             SetObject(goSo, "gameOverPanel", panelRoot.gameObject);
             SetObject(goSo, "restartButton", button);
+            SetObject(goSo, "mainMenuButton", mainMenuButton);
             SetObject(goSo, "gameOverText", titleText);
             GameObject player = FindPlayer(scene);
             if (player != null)

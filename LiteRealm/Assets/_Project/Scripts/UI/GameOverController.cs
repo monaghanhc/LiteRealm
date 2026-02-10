@@ -10,6 +10,7 @@ namespace LiteRealm.UI
         [Header("UI")]
         [SerializeField] private GameObject gameOverPanel;
         [SerializeField] private Button restartButton;
+        [SerializeField] private Button mainMenuButton;
         [SerializeField] private Text gameOverText;
 
         [Header("References")]
@@ -28,6 +29,11 @@ namespace LiteRealm.UI
             {
                 restartButton.onClick.AddListener(OnRestartClicked);
             }
+
+            if (mainMenuButton != null)
+            {
+                mainMenuButton.onClick.AddListener(OnMainMenuClicked);
+            }
         }
 
         private void Start()
@@ -39,6 +45,11 @@ namespace LiteRealm.UI
                 {
                     playerStats = player.GetComponent<PlayerStats>();
                 }
+            }
+
+            if (playerStats == null)
+            {
+                playerStats = Object.FindObjectOfType<PlayerStats>();
             }
 
             if (playerStats != null)
@@ -82,6 +93,12 @@ namespace LiteRealm.UI
         {
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        private void OnMainMenuClicked()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("MainMenu");
         }
     }
 }

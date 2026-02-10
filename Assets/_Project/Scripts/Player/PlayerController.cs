@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using LiteRealm.Core;
+using UnityEngine;
 
 namespace LiteRealm.Player
 {
@@ -41,6 +42,7 @@ namespace LiteRealm.Player
         private Vector3 verticalVelocity;
         private bool crouched;
         private float footstepTimer;
+        private AudioClip[] _runtimeFootstepClips;
 
         public bool IsSprinting { get; private set; }
         public bool IsCrouched => crouched;
@@ -63,6 +65,36 @@ namespace LiteRealm.Player
             {
                 characterController.height = standingHeight;
                 characterController.center = new Vector3(0f, standingHeight * 0.5f, 0f);
+            }
+
+            if (footstepAudio == null)
+            {
+                footstepAudio = GetComponent<AudioSource>();
+                if (footstepAudio == null)
+                {
+                    footstepAudio = gameObject.AddComponent<AudioSource>();
+                }
+                footstepAudio.playOnAwake = false;
+                footstepAudio.spatialBlend = 1f;
+            }
+
+            if ((footstepClips == null || footstepClips.Length == 0) && footstepAudio != null)
+            {
+                _runtimeFootstepClips = new[] { ProceduralAudio.CreateFootstepClip() };
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_runtimeFootstepClips != null)
+            {
+                for (int i = 0; i < _runtimeFootstepClips.Length; i++)
+                {
+                    if (_runtimeFootstepClips[i] != null)
+                    {
+                        Destroy(_runtimeFootstepClips[i]);
+                    }
+                }
             }
         }
 
@@ -141,7 +173,8 @@ namespace LiteRealm.Player
 
         private void HandleFootsteps(float deltaTime)
         {
-            if (characterController == null || footstepAudio == null || footstepClips == null || footstepClips.Length == 0)
+            AudioClip[] clips = (footstepClips != null && footstepClips.Length > 0) ? footstepClips : _runtimeFootstepClips;
+            if (characterController == null || footstepAudio == null || clips == null || clips.Length == 0)
             {
                 return;
             }
@@ -170,8 +203,8 @@ namespace LiteRealm.Player
             if (footstepTimer >= interval)
             {
                 footstepTimer = 0f;
-                int clipIndex = Random.Range(0, footstepClips.Length);
-                footstepAudio.PlayOneShot(footstepClips[clipIndex]);
+                int clipIndex = Random.Range(0, clips.Length);
+                footstepAudio.PlayOneShot(clips[clipIndex]);
             }
         }
 

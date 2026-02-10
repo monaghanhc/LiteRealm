@@ -75,6 +75,9 @@ namespace LiteRealm.EditorTools
             ConfigureSpawner(scene, world.transform, player, hub, dayNight, zombiePrefab);
             ConfigureBoss(scene, app.transform, world.transform, player, hub, dayNight, bossPrefab);
 
+            GameObject canvasRoot = GetOrCreateRoot(scene, "UI Canvas");
+            MainSceneStep3SurvivalBuilder.EnsureGameOverPanel(canvasRoot, scene);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ProjectDoctorConstants.MainScenePath);
             AssetDatabase.SaveAssets();

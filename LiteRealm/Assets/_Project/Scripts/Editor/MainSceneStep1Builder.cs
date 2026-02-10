@@ -331,8 +331,16 @@ namespace LiteRealm.EditorTools
 
             player.AddComponent<PlayerStats>();
             ExplorationInput input = player.AddComponent<ExplorationInput>();
-            player.AddComponent<PlayerController>();
+            PlayerController playerController = player.AddComponent<PlayerController>();
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
+
+            AudioSource footstepSource = player.AddComponent<AudioSource>();
+            footstepSource.playOnAwake = false;
+            footstepSource.spatialBlend = 1f;
+            SerializedObject pcSo = new SerializedObject(playerController);
+            SerializedProperty footstepProp = pcSo.FindProperty("footstepAudio");
+            if (footstepProp != null) footstepProp.objectReferenceValue = footstepSource;
+            pcSo.ApplyModifiedPropertiesWithoutUndo();
 
             SerializedObject so = new SerializedObject(interactor);
             SerializedProperty ip = so.FindProperty("input");
