@@ -409,6 +409,32 @@ namespace LiteRealm.EditorTools
             return text;
         }
 
+        private static Text CreateOrGetText(
+            Transform parent,
+            string name,
+            string initialText,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 sizeDelta,
+            Vector2 anchoredPos,
+            int fontSize,
+            TextAnchor alignment,
+            Color color)
+        {
+            Text text = CreateOrGetText(
+                parent,
+                name,
+                anchorMin,
+                anchorMax,
+                sizeDelta,
+                anchoredPos,
+                fontSize,
+                alignment,
+                color);
+            text.text = initialText;
+            return text;
+        }
+
         public static void EnsureCanvasComponents(GameObject canvasRoot)
         {
             Canvas canvas = GetOrAddComponent<Canvas>(canvasRoot);
