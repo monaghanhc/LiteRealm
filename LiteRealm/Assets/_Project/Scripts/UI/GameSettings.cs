@@ -49,7 +49,7 @@ namespace LiteRealm.UI
 
         public static bool Fullscreen
         {
-            get => PlayerPrefs.GetInt(KeyFullscreen, Screen.fullScreen ? 1 : 0) != 0;
+            get => PlayerPrefs.GetInt(KeyFullscreen, 1) != 0;
             set
             {
                 PlayerPrefs.SetInt(KeyFullscreen, value ? 1 : 0);
