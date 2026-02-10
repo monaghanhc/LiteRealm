@@ -778,7 +778,7 @@ namespace LiteRealm.EditorTools
             rect.anchoredPosition = anchoredPos;
 
             Text text = GetOrAddComponent<Text>(go);
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = fontSize;
             text.alignment = alignment;
             text.color = color;

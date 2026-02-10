@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
 using LiteRealm.CameraSystem;
@@ -425,7 +425,7 @@ namespace LiteRealm.EditorTools
             GameObject textGo = new GameObject("PromptText");
             textGo.transform.SetParent(panel.transform, false);
             Text text = textGo.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = 22;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
