@@ -81,10 +81,10 @@ namespace LiteRealm.EditorTools
             hudRect.offsetMin = Vector2.zero;
             hudRect.offsetMax = Vector2.zero;
 
-            Slider health = CreateOrGetBar(hudRoot, "HealthBar", "HP", new Vector2(160f, -32f), new Color(0.82f, 0.23f, 0.23f));
-            Slider stamina = CreateOrGetBar(hudRoot, "StaminaBar", "Stamina", new Vector2(160f, -62f), new Color(0.26f, 0.73f, 0.34f));
-            Slider hunger = CreateOrGetBar(hudRoot, "HungerBar", "Hunger", new Vector2(160f, -92f), new Color(0.84f, 0.67f, 0.22f));
-            Slider thirst = CreateOrGetBar(hudRoot, "ThirstBar", "Thirst", new Vector2(160f, -122f), new Color(0.25f, 0.52f, 0.87f));
+            Slider health = CreateOrGetBar(hudRoot, "HealthBar", "HP", new Vector2(220f, -32f), new Color(0.82f, 0.23f, 0.23f));
+            Slider stamina = CreateOrGetBar(hudRoot, "StaminaBar", "Stamina", new Vector2(220f, -62f), new Color(0.26f, 0.73f, 0.34f));
+            Slider hunger = CreateOrGetBar(hudRoot, "HungerBar", "Hunger", new Vector2(220f, -92f), new Color(0.84f, 0.67f, 0.22f));
+            Slider thirst = CreateOrGetBar(hudRoot, "ThirstBar", "Thirst", new Vector2(220f, -122f), new Color(0.25f, 0.52f, 0.87f));
 
             Text timeText = CreateOrGetText(
                 hudRoot,
@@ -92,7 +92,7 @@ namespace LiteRealm.EditorTools
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
                 new Vector2(260f, 30f),
-                new Vector2(0f, -18f),
+                new Vector2(0f, -28f),
                 18,
                 TextAnchor.MiddleCenter,
                 Color.white);
@@ -103,7 +103,7 @@ namespace LiteRealm.EditorTools
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(260f, 110f),
-                new Vector2(-140f, -28f),
+                new Vector2(-200f, -36f),
                 14,
                 TextAnchor.UpperLeft,
                 Color.white);
@@ -114,7 +114,7 @@ namespace LiteRealm.EditorTools
                 new Vector2(1f, 0f),
                 new Vector2(1f, 0f),
                 new Vector2(220f, 28f),
-                new Vector2(-118f, 26f),
+                new Vector2(-170f, 32f),
                 16,
                 TextAnchor.MiddleRight,
                 Color.white);
@@ -276,7 +276,7 @@ namespace LiteRealm.EditorTools
             panelRect.anchorMax = new Vector2(0.5f, 0f);
             panelRect.pivot = new Vector2(0.5f, 0f);
             panelRect.sizeDelta = new Vector2(420f, 46f);
-            panelRect.anchoredPosition = new Vector2(0f, 38f);
+            panelRect.anchoredPosition = new Vector2(0f, 56f);
 
             Image bg = GetOrAddComponent<Image>(panel);
             bg.color = new Color(0f, 0f, 0f, 0.56f);
@@ -411,7 +411,12 @@ namespace LiteRealm.EditorTools
         {
             Canvas canvas = GetOrAddComponent<Canvas>(canvasRoot);
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            GetOrAddComponent<CanvasScaler>(canvasRoot);
+            CanvasScaler scaler = GetOrAddComponent<CanvasScaler>(canvasRoot);
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+            scaler.referencePixelsPerUnit = 100f;
             GetOrAddComponent<GraphicRaycaster>(canvasRoot);
         }
 
