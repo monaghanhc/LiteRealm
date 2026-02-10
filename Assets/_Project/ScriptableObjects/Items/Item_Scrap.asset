@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8acf82615f72cba4ab2016cc1ac184dc, type: 3}
+  m_Name: Item_Scrap
+  m_EditorClassIdentifier: LiteRealm::LiteRealm.Inventory.ItemDefinition
+  itemId: item.material.scrap
+  displayName: Scrap Metal
+  description: Salvage material used for crafting later.
+  rarity: 0
+  maxStack: 30
+  icon: {fileID: 0}
+  worldPickupPrefab: {fileID: 5643203794206526939, guid: 914b8b9218b39a948b702de627720e59, type: 3}
+  consumable: 0
+  healthRestore: 0
+  staminaRestore: 0
+  hungerRestore: 0
+  thirstRestore: 0
+  useSfx: {fileID: 0}
+  questItem: 0

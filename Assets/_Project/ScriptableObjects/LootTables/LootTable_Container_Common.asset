@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6aeedffbb829864090b1f46c46d1a3f, type: 3}
+  m_Name: LootTable_Container_Common
+  m_EditorClassIdentifier: LiteRealm::LiteRealm.Loot.LootTable
+  entries:
+  - Item: {fileID: 11400000, guid: 7ff6da7822d1f504e912a405d1c9e4b2, type: 2}
+    MinAmount: 1
+    MaxAmount: 3
+    Weight: 0
+    Guaranteed: 1
+  - Item: {fileID: 11400000, guid: 725faea9effdfd347a4ce3265cc13f1c, type: 2}
+    MinAmount: 1
+    MaxAmount: 2
+    Weight: 1.1
+    Guaranteed: 0
+  - Item: {fileID: 11400000, guid: a84dd829c8f391443b5a43fe46a9d85d, type: 2}
+    MinAmount: 1
+    MaxAmount: 2
+    Weight: 1.1
+    Guaranteed: 0
+  - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
+    MinAmount: 1
+    MaxAmount: 1
+    Weight: 0.35
+    Guaranteed: 0
+  - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
+    MinAmount: 8
+    MaxAmount: 20
+    Weight: 0.9
+    Guaranteed: 0

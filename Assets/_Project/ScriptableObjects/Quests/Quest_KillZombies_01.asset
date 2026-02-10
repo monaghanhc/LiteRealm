@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
+  m_Name: Quest_KillZombies_01
+  m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
+  questId: quest.kill_zombies.01
+  title: Thin the Horde
+  description: Clear nearby infected so survivors can move supplies.
+  objectives:
+  - Type: 0
+    TargetId: zombie.basic
+    RequiredCount: 3
+    Description: Kill nearby zombies
+  rewards:
+  - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
+    Amount: 12
+    Experience: 100

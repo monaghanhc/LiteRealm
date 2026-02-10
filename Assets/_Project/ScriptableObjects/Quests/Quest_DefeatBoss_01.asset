@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
+  m_Name: Quest_DefeatBoss_01
+  m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
+  questId: quest.defeat_boss.01
+  title: Alpha Hunt
+  description: Defeat the Alpha boss in the clearing.
+  objectives:
+  - Type: 2
+    TargetId: boss.alpha
+    RequiredCount: 1
+    Description: Defeat the Alpha boss
+  rewards:
+  - Item: {fileID: 11400000, guid: 56fbc4fe601dcc24bb86f34fe09c7e3f, type: 2}
+    Amount: 1
+    Experience: 300
+  - Item: {fileID: 11400000, guid: a84dd829c8f391443b5a43fe46a9d85d, type: 2}
+    Amount: 2
+    Experience: 0

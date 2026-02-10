@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
+  m_Name: Quest_RetrieveSupplies_01
+  m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
+  questId: quest.retrieve_supplies.01
+  title: Water Run
+  description: Bring back clean water before nightfall.
+  objectives:
+  - Type: 1
+    TargetId: item.consumable.water_bottle
+    RequiredCount: 2
+    Description: Collect water bottles
+  rewards:
+  - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
+    Amount: 1
+    Experience: 125
