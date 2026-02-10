@@ -3,7 +3,11 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Enemy
+  - NPC
+  - Interactable
+  - Loot
   layers:
   - Default
   - TransparentFX
@@ -13,11 +17,11 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Player
+  - Enemy
+  - NPC
+  - Interactable
+  - Loot
   - 
   - 
   - 

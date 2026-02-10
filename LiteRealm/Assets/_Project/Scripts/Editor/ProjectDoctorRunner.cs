@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -167,7 +167,7 @@ namespace LiteRealm.EditorTools
                 return false;
             }
 
-            PackageInfo[] packages = PackageInfo.GetAllRegisteredPackages();
+            UnityEditor.PackageManager.PackageInfo[] packages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
             if (packages == null)
             {
                 return false;
@@ -175,7 +175,7 @@ namespace LiteRealm.EditorTools
 
             for (int i = 0; i < packages.Length; i++)
             {
-                PackageInfo package = packages[i];
+                UnityEditor.PackageManager.PackageInfo package = packages[i];
                 if (package != null && package.name == packageId)
                 {
                     return true;
