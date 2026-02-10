@@ -323,6 +323,7 @@ namespace LiteRealm.EditorTools
             cc.radius = 0.35f;
             cc.center = new Vector3(0f, 0.9f, 0f);
 
+            player.AddComponent<PlayerStats>();
             ExplorationInput input = player.AddComponent<ExplorationInput>();
             player.AddComponent<PlayerController>();
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();

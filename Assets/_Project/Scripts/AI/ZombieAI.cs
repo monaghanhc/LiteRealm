@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LiteRealm.Core;
 using LiteRealm.Player;
 using LiteRealm.World;
@@ -258,7 +258,17 @@ namespace LiteRealm.AI
 
         private void TryAttack()
         {
-            if (attackTimer > 0f || targetDamageable == null)
+            if (attackTimer > 0f)
+            {
+                return;
+            }
+
+            if (targetDamageable == null)
+            {
+                ResolveTargetDamageable();
+            }
+
+            if (targetDamageable == null)
             {
                 return;
             }

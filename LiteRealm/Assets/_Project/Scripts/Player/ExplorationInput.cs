@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -58,7 +58,11 @@ namespace LiteRealm.Player
 #if ENABLE_INPUT_SYSTEM
             if (usingInputSystem && moveAction != null)
             {
-                return moveAction.ReadValue<Vector2>();
+                Vector2 v = moveAction.ReadValue<Vector2>();
+                if (v.sqrMagnitude > 0.0001f)
+                {
+                    return v;
+                }
             }
 #endif
             return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
@@ -69,7 +73,11 @@ namespace LiteRealm.Player
 #if ENABLE_INPUT_SYSTEM
             if (usingInputSystem && lookAction != null)
             {
-                return lookAction.ReadValue<Vector2>();
+                Vector2 v = lookAction.ReadValue<Vector2>();
+                if (v.sqrMagnitude > 0.0001f)
+                {
+                    return v;
+                }
             }
 #endif
             return new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
@@ -78,9 +86,9 @@ namespace LiteRealm.Player
         public bool JumpPressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && jumpAction != null)
+            if (usingInputSystem && jumpAction != null && jumpAction.WasPressedThisFrame())
             {
-                return jumpAction.WasPressedThisFrame();
+                return true;
             }
 #endif
             return Input.GetKeyDown(jumpFallbackKey);
@@ -89,9 +97,9 @@ namespace LiteRealm.Player
         public bool SprintHeld()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && sprintAction != null)
+            if (usingInputSystem && sprintAction != null && sprintAction.IsPressed())
             {
-                return sprintAction.IsPressed();
+                return true;
             }
 #endif
             return Input.GetKey(sprintFallbackKey);
@@ -100,9 +108,9 @@ namespace LiteRealm.Player
         public bool CrouchHeld()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && crouchAction != null)
+            if (usingInputSystem && crouchAction != null && crouchAction.IsPressed())
             {
-                return crouchAction.IsPressed();
+                return true;
             }
 #endif
             return Input.GetKey(crouchFallbackKey);
@@ -111,9 +119,9 @@ namespace LiteRealm.Player
         public bool CrouchPressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && crouchAction != null)
+            if (usingInputSystem && crouchAction != null && crouchAction.WasPressedThisFrame())
             {
-                return crouchAction.WasPressedThisFrame();
+                return true;
             }
 #endif
             return Input.GetKeyDown(crouchFallbackKey);
@@ -122,9 +130,9 @@ namespace LiteRealm.Player
         public bool ToggleViewPressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && toggleViewAction != null)
+            if (usingInputSystem && toggleViewAction != null && toggleViewAction.WasPressedThisFrame())
             {
-                return toggleViewAction.WasPressedThisFrame();
+                return true;
             }
 #endif
             return Input.GetKeyDown(toggleViewFallbackKey);
@@ -133,9 +141,9 @@ namespace LiteRealm.Player
         public bool InteractPressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && interactAction != null)
+            if (usingInputSystem && interactAction != null && interactAction.WasPressedThisFrame())
             {
-                return interactAction.WasPressedThisFrame();
+                return true;
             }
 #endif
             return Input.GetKeyDown(interactFallbackKey);
@@ -144,9 +152,9 @@ namespace LiteRealm.Player
         public bool FireHeld()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && fireAction != null)
+            if (usingInputSystem && fireAction != null && fireAction.IsPressed())
             {
-                return fireAction.IsPressed();
+                return true;
             }
 #endif
             return Input.GetKey(fireFallbackKey);
@@ -155,9 +163,9 @@ namespace LiteRealm.Player
         public bool ReloadPressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            if (usingInputSystem && reloadAction != null)
+            if (usingInputSystem && reloadAction != null && reloadAction.WasPressedThisFrame())
             {
-                return reloadAction.WasPressedThisFrame();
+                return true;
             }
 #endif
             return Input.GetKeyDown(reloadFallbackKey);
@@ -211,7 +219,9 @@ namespace LiteRealm.Player
                 return;
             }
 
-            actionMap = new InputActionMap("Gameplay");
+            try
+            {
+                actionMap = new InputActionMap("Gameplay");
 
             moveAction = actionMap.AddAction("Move", InputActionType.Value);
             moveAction.AddCompositeBinding("2DVector")
@@ -252,6 +262,12 @@ namespace LiteRealm.Player
             reloadAction = actionMap.AddAction("Reload", InputActionType.Button);
             reloadAction.AddBinding("<Keyboard>/r");
             reloadAction.AddBinding("<Gamepad>/buttonNorth");
+            }
+            catch (System.Exception)
+            {
+                usingInputSystem = false;
+                actionMap = null;
+            }
         }
 #endif
     }

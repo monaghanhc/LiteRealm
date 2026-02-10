@@ -144,10 +144,16 @@ namespace LiteRealm.Combat
                 return false;
             }
 
+            LayerMask effectiveMask = hitMask;
+            if (effectiveMask == 0)
+            {
+                effectiveMask = ~0;
+            }
+
             WeaponFireContext fireContext = new WeaponFireContext
             {
                 AimCamera = aimCamera,
-                HitMask = hitMask,
+                HitMask = effectiveMask,
                 Instigator = gameObject,
                 EventHub = eventHub
             };

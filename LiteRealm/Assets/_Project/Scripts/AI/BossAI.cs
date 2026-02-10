@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LiteRealm.Core;
 using LiteRealm.World;
 using UnityEngine;
@@ -146,7 +146,17 @@ namespace LiteRealm.AI
 
         private void TryMeleeAttack()
         {
-            if (meleeTimer > 0f || targetDamageable == null)
+            if (meleeTimer > 0f)
+            {
+                return;
+            }
+
+            if (targetDamageable == null)
+            {
+                ResolveTargetDamageable();
+            }
+
+            if (targetDamageable == null)
             {
                 return;
             }
