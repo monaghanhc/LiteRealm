@@ -234,7 +234,9 @@ namespace LiteRealm.EditorTools
             bool saved = EditorSceneManager.SaveScene(scene, MainMenuScenePath, true);
             if (saved)
             {
+                AssetDatabase.Refresh();
                 EnsureBuildSettingsOrder();
+                SetMainMenuAsPlayStartScene();
                 Debug.Log("Main Menu scene built and saved to " + MainMenuScenePath);
             }
         }
@@ -248,6 +250,34 @@ namespace LiteRealm.EditorTools
             }
 
             EnsureBuildSettingsOrder();
+            SetMainMenuAsPlayStartScene();
+        }
+
+        [MenuItem("Tools/LiteRealm/Scenes/Set Main Menu as Play Start Scene")]
+        public static void SetMainMenuAsPlayStartScene()
+        {
+            if (!File.Exists(MainMenuScenePath))
+            {
+                Debug.LogWarning("Main Menu scene not found. Run 'Tools > LiteRealm > Scenes > Build Main Menu Scene' first.");
+                return;
+            }
+
+            SceneAsset sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath);
+            if (sceneAsset == null)
+            {
+                AssetDatabase.Refresh();
+                sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath);
+            }
+
+            if (sceneAsset != null)
+            {
+                EditorSceneManager.playModeStartScene = sceneAsset;
+                Debug.Log("Play will now start with the Main Menu scene.");
+            }
+            else
+            {
+                Debug.LogWarning("Could not load Main Menu scene asset at " + MainMenuScenePath);
+            }
         }
 
         private static GameObject CreatePanel(Transform parent, string name, Color bgColor)
