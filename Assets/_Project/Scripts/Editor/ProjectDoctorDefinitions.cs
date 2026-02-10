@@ -77,6 +77,7 @@ namespace LiteRealm.EditorTools
     public static class ProjectDoctorConstants
     {
         public const string MainScenePath = "Assets/_Project/Scenes/Main.unity";
+        public const string MainMenuScenePath = "Assets/_Project/Scenes/MainMenu.unity";
         public const string InputSystemPackage = "com.unity.inputsystem";
         public const string AiNavigationPackage = "com.unity.ai.navigation";
         public const string UguiPackage = "com.unity.ugui";

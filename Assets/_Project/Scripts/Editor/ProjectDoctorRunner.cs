@@ -569,6 +569,20 @@ namespace LiteRealm.EditorTools
                 Message = hasPrefab ? $"Found {prefabs.Length} prefab(s) under Assets/_Project/Prefabs." : "No prefabs found under Assets/_Project/Prefabs yet.",
                 FixHint = hasPrefab ? string.Empty : "Expected during bootstrap. Add prefabs in the next build step."
             });
+
+            bool hasMainMenuScene = File.Exists(ProjectDoctorConstants.MainMenuScenePath);
+            report.Results.Add(new DoctorCheckResult
+            {
+                Code = "MAIN_MENU_EXISTS",
+                Passed = hasMainMenuScene,
+                Severity = hasMainMenuScene ? DoctorSeverity.Info : DoctorSeverity.Warning,
+                Message = hasMainMenuScene
+                    ? $"Main menu scene exists: {ProjectDoctorConstants.MainMenuScenePath}"
+                    : $"Main menu scene missing: {ProjectDoctorConstants.MainMenuScenePath}",
+                FixHint = hasMainMenuScene
+                    ? string.Empty
+                    : "Run Tools/LiteRealm/Scenes/Build Main Menu Scene or Tools/LiteRealm/Bootstrap/Setup + Validate."
+            });
         }
 
         private static void CheckMainSceneStructure(DoctorReport report)

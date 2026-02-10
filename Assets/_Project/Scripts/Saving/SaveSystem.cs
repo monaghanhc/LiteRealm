@@ -13,10 +13,12 @@ namespace LiteRealm.Saving
 {
     public class SaveSystem : MonoBehaviour
     {
+        public const string DefaultFileName = "savegame.json";
+        private const string PendingResumeLoadPrefKey = "LiteRealm.PendingResumeLoad";
         private const int CurrentSchemaVersion = 1;
         private const string CurrentBuildVersion = "0.5.0";
 
-        [SerializeField] private string fileName = "savegame.json";
+        [SerializeField] private string fileName = DefaultFileName;
         [SerializeField] private KeyCode quickSaveKey = KeyCode.F5;
         [SerializeField] private KeyCode quickLoadKey = KeyCode.F9;
 
@@ -31,7 +33,47 @@ namespace LiteRealm.Saving
         [SerializeField] private BossSpawnManager bossSpawnManager;
         [SerializeField] private LootContainer[] lootContainers;
 
-        public string SavePath => Path.Combine(Application.persistentDataPath, fileName);
+        public string SavePath => GetSavePath(fileName);
+
+        public static string GetSavePath(string fileName = DefaultFileName)
+        {
+            string resolvedName = string.IsNullOrWhiteSpace(fileName) ? DefaultFileName : fileName;
+            return Path.Combine(Application.persistentDataPath, resolvedName);
+        }
+
+        public static bool HasSaveFile(string fileName = DefaultFileName)
+        {
+            return File.Exists(GetSavePath(fileName));
+        }
+
+        public static bool DeleteSaveFile(string fileName = DefaultFileName)
+        {
+            string path = GetSavePath(fileName);
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            File.Delete(path);
+            return true;
+        }
+
+        public static void RequestResumeOnNextSceneLoad()
+        {
+            PlayerPrefs.SetInt(PendingResumeLoadPrefKey, 1);
+            PlayerPrefs.Save();
+        }
+
+        public static void ClearPendingResumeRequest()
+        {
+            if (PlayerPrefs.GetInt(PendingResumeLoadPrefKey, 0) == 0)
+            {
+                return;
+            }
+
+            PlayerPrefs.DeleteKey(PendingResumeLoadPrefKey);
+            PlayerPrefs.Save();
+        }
 
         private void Start()
         {
@@ -49,6 +91,8 @@ namespace LiteRealm.Saving
             {
                 lootContainers = FindObjectsOfType<LootContainer>(true);
             }
+
+            TryAutoLoadPendingResume();
         }
 
         private void Update()
@@ -191,6 +235,32 @@ namespace LiteRealm.Saving
 
             RestoreContainers(data.World.ContainerStates);
             Debug.Log($"Loaded game from: {SavePath}");
+            return true;
+        }
+
+        private void TryAutoLoadPendingResume()
+        {
+            if (!ConsumePendingResumeRequest())
+            {
+                return;
+            }
+
+            bool loaded = LoadGame();
+            if (!loaded)
+            {
+                Debug.LogWarning("SaveSystem: Resume was requested but no valid save could be loaded.");
+            }
+        }
+
+        private static bool ConsumePendingResumeRequest()
+        {
+            if (PlayerPrefs.GetInt(PendingResumeLoadPrefKey, 0) == 0)
+            {
+                return false;
+            }
+
+            PlayerPrefs.DeleteKey(PendingResumeLoadPrefKey);
+            PlayerPrefs.Save();
             return true;
         }
 

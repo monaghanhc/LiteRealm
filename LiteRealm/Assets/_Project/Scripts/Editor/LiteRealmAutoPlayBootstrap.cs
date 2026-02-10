@@ -68,11 +68,19 @@ namespace LiteRealm.EditorTools
                 LiteRealmBootstrapper.SetupAndValidate();
             }
 
-            SceneAsset sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(ProjectDoctorConstants.MainScenePath);
+            MainMenuSceneBuilder.EnsureMainMenuScene();
+
+            SceneAsset sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(ProjectDoctorConstants.MainMenuScenePath);
+            if (sceneAsset == null)
+            {
+                Debug.LogWarning($"LiteRealm: Could not load {ProjectDoctorConstants.MainMenuScenePath}. Falling back to Main scene.");
+                sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(ProjectDoctorConstants.MainScenePath);
+            }
+
             if (sceneAsset != null && EditorSceneManager.playModeStartScene != sceneAsset)
             {
                 EditorSceneManager.playModeStartScene = sceneAsset;
-                Debug.Log($"LiteRealm: Play Mode Start Scene set to {ProjectDoctorConstants.MainScenePath}");
+                Debug.Log($"LiteRealm: Play Mode Start Scene set to {AssetDatabase.GetAssetPath(sceneAsset)}");
             }
         }
     }

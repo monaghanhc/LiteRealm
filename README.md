@@ -4,20 +4,19 @@ This repository contains the gameplay scaffold under `Assets/_Project` for a 3D 
 
 ## Important
 
-The repo root currently contains `Assets/` but not a full Unity project config (`ProjectSettings/`, `Packages/`).
-Use the import workflow below for reliable setup.
+Open this repository directly as a Unity project (it includes `Assets/`, `Packages/`, and `ProjectSettings/`).
 
 ## Quick Start (Recommended)
 
-1. Open Unity Hub and create a new **3D (Built-In Render Pipeline)** project using **Unity 2022.3 LTS or newer**.
-2. Close Unity.
-3. Copy this repo's `Assets/_Project` folder into your new project's `Assets/` folder.
-4. Re-open the Unity project.
-5. In Unity, run:
+1. Open Unity Hub and add/open this folder using **Unity 2022.3 LTS or newer**.
+2. In Unity, run:
    - `Tools > LiteRealm > Bootstrap > Setup + Validate (Step 1-5)`
-6. Then run:
+3. Then run:
    - `Tools > LiteRealm > Bootstrap > Open Main Scene`
-7. Press Play.
+4. Press Play.
+5. You now start in `MainMenu`:
+   - `New Game` always available.
+   - `Resume` is enabled only when `savegame.json` exists.
 
 ## What the Bootstrap Does
 

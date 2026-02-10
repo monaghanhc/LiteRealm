@@ -1,4 +1,12 @@
-﻿# LiteRealm MVP Scene Setup (Unity 2022.3 LTS+)
+# LiteRealm MVP Scene Setup (Unity 2022.3 LTS+)
+
+## 0) Main Menu
+- Run **Tools > LiteRealm > Scenes > Build Main Menu Scene** to create `Assets/_Project/Scenes/MainMenu.unity` (auto-built by bootstrap if missing).
+- The builder adds/reorders Build Settings so `MainMenu` is index 0 and `Main` is index 1.
+- Main menu: **New Game**, **Resume** (enabled only when `savegame.json` exists), **Settings**, **Quit**.
+- Clicking **Resume** loads `Main` and auto-loads save data through `SaveSystem`.
+- Settings are saved with PlayerPrefs and applied when the game starts.
+- From in-game Game Over screen you can choose **Restart** or **Main Menu**.
 
 ## 1) Packages
 - Required: **AI Navigation** (`com.unity.ai.navigation`) for NavMesh workflows.

@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.IO;
 using LiteRealm.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -10,7 +11,7 @@ namespace LiteRealm.EditorTools
 {
     public static class MainMenuSceneBuilder
     {
-        private const string MainMenuScenePath = "Assets/_Project/Scenes/MainMenu.unity";
+        public const string MainMenuScenePath = "Assets/_Project/Scenes/MainMenu.unity";
 
         [MenuItem("Tools/LiteRealm/Scenes/Build Main Menu Scene")]
         public static void BuildMainMenuScene()
@@ -45,9 +46,16 @@ namespace LiteRealm.EditorTools
             titleRect.anchoredPosition = Vector2.zero;
             titleText.fontStyle = FontStyle.Bold;
 
-            Button playButton = CreateButton(mainPanel.transform, "PlayButton", "Play", new Vector2(0.5f, 0.48f));
-            Button settingsButton = CreateButton(mainPanel.transform, "SettingsButton", "Settings", new Vector2(0.5f, 0.36f));
-            Button quitButton = CreateButton(mainPanel.transform, "QuitButton", "Quit", new Vector2(0.5f, 0.24f));
+            Text saveStatusText = CreateText(mainPanel.transform, "SaveStatusText", "Checking saves...", 18, new Color(0.78f, 0.82f, 0.88f));
+            RectTransform saveStatusRect = saveStatusText.GetComponent<RectTransform>();
+            saveStatusRect.anchorMin = new Vector2(0.5f, 0.58f);
+            saveStatusRect.anchorMax = new Vector2(0.5f, 0.58f);
+            saveStatusRect.sizeDelta = new Vector2(520f, 32f);
+
+            Button newGameButton = CreateButton(mainPanel.transform, "NewGameButton", "New Game", 0.46f);
+            Button resumeButton = CreateButton(mainPanel.transform, "ResumeButton", "Resume", 0.36f);
+            Button settingsButton = CreateButton(mainPanel.transform, "SettingsButton", "Settings", 0.26f);
+            Button quitButton = CreateButton(mainPanel.transform, "QuitButton", "Quit", 0.16f);
 
             GameObject settingsPanel = CreatePanel(canvasRoot.transform, "SettingsPanel", new Color(0.06f, 0.06f, 0.12f, 0.98f));
             settingsPanel.SetActive(false);
@@ -82,6 +90,7 @@ namespace LiteRealm.EditorTools
             dropdownRect.anchorMin = new Vector2(0f, 0.5f);
             dropdownRect.anchorMax = new Vector2(1f, 0.5f);
             dropdownRect.pivot = new Vector2(0.5f, 0.5f);
+            dropdownRect.anchoredPosition = Vector2.zero;
             dropdownRect.sizeDelta = new Vector2(-140f, 28f);
             dropdownRect.offsetMin = new Vector2(130f, -14f);
             dropdownRect.offsetMax = new Vector2(-20f, 14f);
@@ -197,16 +206,18 @@ namespace LiteRealm.EditorTools
             fullscreenToggle.graphic = checkmark.GetComponent<Image>();
             fullscreenToggle.targetGraphic = toggleBg.GetComponent<Image>();
 
-            Button backButton = CreateButton(settingsPanel.transform, "BackButton", "Back", new Vector2(0.5f, 0.06f));
+            Button backButton = CreateButton(settingsPanel.transform, "BackButton", "Back", 0.06f);
 
             MainMenuController menuController = canvasRoot.AddComponent<MainMenuController>();
             SettingsMenuController settingsController = settingsPanel.AddComponent<SettingsMenuController>();
 
             SerializedObject menuSo = new SerializedObject(menuController);
             SetRef(menuSo, "mainPanel", mainPanel);
-            SetRef(menuSo, "playButton", playButton);
+            SetRef(menuSo, "newGameButton", newGameButton);
+            SetRef(menuSo, "resumeButton", resumeButton);
             SetRef(menuSo, "settingsButton", settingsButton);
             SetRef(menuSo, "quitButton", quitButton);
+            SetRef(menuSo, "saveStatusText", saveStatusText);
             SetRef(menuSo, "settingsPanel", settingsPanel);
             SetRef(menuSo, "settingsController", settingsController);
             menuSo.ApplyModifiedPropertiesWithoutUndo();
@@ -223,9 +234,20 @@ namespace LiteRealm.EditorTools
             bool saved = EditorSceneManager.SaveScene(scene, MainMenuScenePath, true);
             if (saved)
             {
-                AddSceneToBuildSettingsIfNeeded(MainMenuScenePath);
+                EnsureBuildSettingsOrder();
                 Debug.Log("Main Menu scene built and saved to " + MainMenuScenePath);
             }
+        }
+
+        public static void EnsureMainMenuScene()
+        {
+            if (!File.Exists(MainMenuScenePath))
+            {
+                BuildMainMenuScene();
+                return;
+            }
+
+            EnsureBuildSettingsOrder();
         }
 
         private static GameObject CreatePanel(Transform parent, string name, Color bgColor)
@@ -262,13 +284,13 @@ namespace LiteRealm.EditorTools
             return text;
         }
 
-        private static Button CreateButton(Transform parent, string name, string label, Vector2 anchorY)
+        private static Button CreateButton(Transform parent, string name, string label, float anchorY)
         {
             GameObject go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, anchorY.x);
-            rect.anchorMax = new Vector2(0.5f, anchorY.y);
+            rect.anchorMin = new Vector2(0.5f, anchorY);
+            rect.anchorMax = new Vector2(0.5f, anchorY);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = new Vector2(220f, 44f);
             rect.anchoredPosition = Vector2.zero;
@@ -359,18 +381,47 @@ namespace LiteRealm.EditorTools
             if (p != null) p.objectReferenceValue = value;
         }
 
-        private static void AddSceneToBuildSettingsIfNeeded(string scenePath)
+        private static void EnsureBuildSettingsOrder()
         {
             var buildScenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
-            for (int i = 0; i < buildScenes.Count; i++)
+            UpsertBuildScene(buildScenes, MainMenuScenePath, 0);
+
+            if (File.Exists(ProjectDoctorConstants.MainScenePath))
             {
-                if (buildScenes[i].path == scenePath)
+                UpsertBuildScene(buildScenes, ProjectDoctorConstants.MainScenePath, 1);
+            }
+
+            EditorBuildSettings.scenes = buildScenes.ToArray();
+        }
+
+        private static void UpsertBuildScene(System.Collections.Generic.List<EditorBuildSettingsScene> scenes, string path, int desiredIndex)
+        {
+            desiredIndex = Mathf.Clamp(desiredIndex, 0, scenes.Count);
+
+            int existingIndex = -1;
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                if (scenes[i].path == path)
                 {
-                    return;
+                    existingIndex = i;
+                    break;
                 }
             }
-            buildScenes.Insert(0, new EditorBuildSettingsScene(scenePath, true));
-            EditorBuildSettings.scenes = buildScenes.ToArray();
+
+            EditorBuildSettingsScene sceneEntry = new EditorBuildSettingsScene(path, true);
+            if (existingIndex >= 0)
+            {
+                scenes.RemoveAt(existingIndex);
+            }
+
+            if (desiredIndex >= scenes.Count)
+            {
+                scenes.Add(sceneEntry);
+            }
+            else
+            {
+                scenes.Insert(desiredIndex, sceneEntry);
+            }
         }
     }
 }

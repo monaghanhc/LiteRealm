@@ -15,6 +15,7 @@ namespace LiteRealm.EditorTools
             ProjectDoctorRunner.SetInputHandlingMode(InputHandlingMode.Both);
 
             MainSceneStep5QuestPersistenceBuilder.ApplyStep5();
+            MainMenuSceneBuilder.EnsureMainMenuScene();
 
             DoctorReport report = ProjectDoctorRunner.RunChecks();
             ProjectDoctorRunner.LogReport(report);
