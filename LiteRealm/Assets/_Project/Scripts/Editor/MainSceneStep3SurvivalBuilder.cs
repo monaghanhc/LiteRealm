@@ -29,6 +29,7 @@ namespace LiteRealm.EditorTools
             GameObject canvasRoot = GetOrCreateRoot(scene, "UI Canvas");
 
             EnsureCanvasComponents(canvasRoot);
+            EnsureReticle(canvasRoot);
             EnsureDayNight(appRoot, scene);
             EnsureSurvivalHud(canvasRoot, scene);
             EnsureInteractionPrompt(canvasRoot, scene);
@@ -418,6 +419,39 @@ namespace LiteRealm.EditorTools
             scaler.matchWidthOrHeight = 0.5f;
             scaler.referencePixelsPerUnit = 100f;
             GetOrAddComponent<GraphicRaycaster>(canvasRoot);
+        }
+
+        private static void EnsureReticle(GameObject canvasRoot)
+        {
+            Transform reticleRoot = GetOrCreateUiChild(canvasRoot.transform, "Reticle").transform;
+            RectTransform rootRect = reticleRoot.GetComponent<RectTransform>();
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.pivot = new Vector2(0.5f, 0.5f);
+            rootRect.sizeDelta = new Vector2(24f, 24f);
+            rootRect.anchoredPosition = Vector2.zero;
+
+            GameObject lineH = GetOrCreateUiChild(reticleRoot, "LineH");
+            RectTransform lineHRect = lineH.GetComponent<RectTransform>();
+            lineHRect.anchorMin = new Vector2(0.5f, 0.5f);
+            lineHRect.anchorMax = new Vector2(0.5f, 0.5f);
+            lineHRect.pivot = new Vector2(0.5f, 0.5f);
+            lineHRect.sizeDelta = new Vector2(14f, 2f);
+            lineHRect.anchoredPosition = Vector2.zero;
+            Image imgH = GetOrAddComponent<Image>(lineH);
+            imgH.color = new Color(1f, 1f, 1f, 0.92f);
+            imgH.raycastTarget = false;
+
+            GameObject lineV = GetOrCreateUiChild(reticleRoot, "LineV");
+            RectTransform lineVRect = lineV.GetComponent<RectTransform>();
+            lineVRect.anchorMin = new Vector2(0.5f, 0.5f);
+            lineVRect.anchorMax = new Vector2(0.5f, 0.5f);
+            lineVRect.pivot = new Vector2(0.5f, 0.5f);
+            lineVRect.sizeDelta = new Vector2(2f, 14f);
+            lineVRect.anchoredPosition = Vector2.zero;
+            Image imgV = GetOrAddComponent<Image>(lineV);
+            imgV.color = new Color(1f, 1f, 1f, 0.92f);
+            imgV.raycastTarget = false;
         }
 
         private static T FindInScene<T>(Scene scene) where T : Component

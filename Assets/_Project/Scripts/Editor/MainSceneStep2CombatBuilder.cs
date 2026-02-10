@@ -76,6 +76,8 @@ namespace LiteRealm.EditorTools
             ConfigureBoss(scene, app.transform, world.transform, player, hub, dayNight, bossPrefab);
 
             GameObject canvasRoot = GetOrCreateRoot(scene, "UI Canvas");
+            MainSceneStep3SurvivalBuilder.EnsureCanvasComponents(canvasRoot);
+            MainSceneStep3SurvivalBuilder.EnsureReticle(canvasRoot);
             MainSceneStep3SurvivalBuilder.EnsureGameOverPanel(canvasRoot, scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
