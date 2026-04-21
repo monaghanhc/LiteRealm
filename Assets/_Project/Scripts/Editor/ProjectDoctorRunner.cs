@@ -41,6 +41,20 @@ namespace LiteRealm.EditorTools
             CheckTags(report);
             CheckLayers(report);
             CheckContentPresence(report);
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isPlaying)
+            {
+                report.Results.Add(new DoctorCheckResult
+                {
+                    Code = "PLAYMODE_SCENE_CHECKS_SKIPPED",
+                    Passed = true,
+                    Severity = DoctorSeverity.Info,
+                    Message = "Skipped scene-structure checks because Unity is entering or in Play mode.",
+                    FixHint = string.Empty
+                });
+                return report;
+            }
+
             CheckMainSceneStructure(report);
             CheckCombatAndEnemySetup(report);
             CheckTimeAndSurvivalSetup(report);
@@ -889,11 +903,16 @@ namespace LiteRealm.EditorTools
                     "Assign HP/Stamina/Hunger/Thirst bars, time text, player stats, and day-night refs."));
 
                 GameOverController gameOver = FindComponentInScene<GameOverController>(scene);
-                bool hasGameOver = gameOver != null;
+                bool hasRuntimeGameOverFallback = Type.GetType("LiteRealm.Core.PhaseOneRuntimeBootstrap, Assembly-CSharp") != null;
+                bool hasGameOver = gameOver != null || hasRuntimeGameOverFallback;
                 report.Results.Add(BuildStep2Check(
                     "GAMEOVER_CONTROLLER",
                     hasGameOver,
-                    hasGameOver ? "GameOverController found." : "GameOverController missing.",
+                    gameOver != null
+                        ? "GameOverController found."
+                        : (hasRuntimeGameOverFallback
+                            ? "GameOverController missing in scene, but runtime bootstrap fallback is available."
+                            : "GameOverController missing."),
                     "Add GameOverController to UI Canvas or rely on runtime bootstrap fallback."));
 
                 SpawnerZone[] spawners = FindComponentsInScene<SpawnerZone>(scene);
@@ -918,25 +937,12 @@ namespace LiteRealm.EditorTools
                         : "Spawner night scaling is missing or invalid.",
                     "Assign day-night references and set night spawn multiplier above 1."));
 
-                ZombieAI zombie = FindComponentInScene<ZombieAI>(scene);
-                bool zombieNightAggroConfigured = false;
-                if (zombie != null)
-                {
-                    SerializedObject zombieSo = new SerializedObject(zombie);
-                    SerializedProperty sense = zombieSo.FindProperty("nightSenseMultiplier");
-                    SerializedProperty move = zombieSo.FindProperty("nightMoveSpeedMultiplier");
-                    SerializedProperty damage = zombieSo.FindProperty("nightDamageMultiplier");
-                    zombieNightAggroConfigured = sense != null && sense.floatValue > 1f
-                                                 && move != null && move.floatValue > 1f
-                                                 && damage != null && damage.floatValue > 1f;
-                }
+                bool zombieNightAggroConfigured = ValidateZombieNightAggro(scene, out string zombieAggroMessage);
 
                 report.Results.Add(BuildStep2Check(
                     "NIGHT_ZOMBIE_AGGRO",
                     zombieNightAggroConfigured,
-                    zombieNightAggroConfigured
-                        ? "Zombie night aggression multipliers are configured above daytime baseline."
-                        : "Zombie night aggression multipliers are missing or not above baseline.",
+                    zombieAggroMessage,
                     "Set zombie night move/sense/damage multipliers above 1."));
             }
             finally
@@ -951,6 +957,58 @@ namespace LiteRealm.EditorTools
                     SceneManager.SetActiveScene(previousActive);
                 }
             }
+        }
+
+        private static bool ValidateZombieNightAggro(Scene scene, out string message)
+        {
+            ZombieAI[] zombies = FindComponentsInScene<ZombieAI>(scene);
+
+            if (zombies == null || zombies.Length == 0)
+            {
+                message = "No ZombieAI component found in Main scene.";
+                return false;
+            }
+
+            int validCount = 0;
+            List<string> invalidNames = new List<string>();
+
+            for (int i = 0; i < zombies.Length; i++)
+            {
+                ZombieAI zombie = zombies[i];
+                if (zombie == null)
+                {
+                    continue;
+                }
+
+                SerializedObject zombieSo = new SerializedObject(zombie);
+                SerializedProperty sense = zombieSo.FindProperty("nightSenseMultiplier");
+                SerializedProperty move = zombieSo.FindProperty("nightMoveSpeedMultiplier");
+                SerializedProperty damage = zombieSo.FindProperty("nightDamageMultiplier");
+
+                bool valid = sense != null && sense.floatValue > 1f
+                             && move != null && move.floatValue > 1f
+                             && damage != null && damage.floatValue > 1f;
+
+                if (valid)
+                {
+                    validCount++;
+                }
+                else
+                {
+                    invalidNames.Add(zombie.gameObject.name);
+                }
+            }
+
+            if (validCount > 0)
+            {
+                message = invalidNames.Count == 0
+                    ? $"Zombie night aggression multipliers are configured above daytime baseline on all {validCount} zombie(s)."
+                    : $"Zombie night aggression multipliers are configured on {validCount} zombie(s), but invalid or missing on: {string.Join(", ", invalidNames)}.";
+                return invalidNames.Count == 0;
+            }
+
+            message = "Zombie night aggression multipliers are missing or not above baseline on all found ZombieAI components.";
+            return false;
         }
 
         private static void CheckLootLoopSetup(DoctorReport report)
@@ -1181,10 +1239,6 @@ namespace LiteRealm.EditorTools
             return success;
         }
 
-        /// <summary>
-        /// If the report has failed loot-related checks, runs Step 4 (Looting Loop) to create missing assets.
-        /// Returns true if Step 4 was run so the caller can re-run checks.
-        /// </summary>
         public static bool TryAutoFixLootSetup(DoctorReport report)
         {
             if (report == null || report.Results == null)

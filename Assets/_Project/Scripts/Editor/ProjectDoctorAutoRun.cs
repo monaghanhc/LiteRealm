@@ -38,6 +38,11 @@ namespace LiteRealm.EditorTools
                 return;
             }
 
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isPlaying)
+            {
+                return;
+            }
+
             DoctorReport report = ProjectDoctorRunner.RunChecks();
             if (ProjectDoctorRunner.TryAutoFixLootSetup(report))
             {

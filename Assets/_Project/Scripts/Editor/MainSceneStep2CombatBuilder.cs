@@ -165,15 +165,18 @@ namespace LiteRealm.EditorTools
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflePrefabPath);
             if (prefab != null)
             {
-                if (bloodImpactPrefab != null)
+                HitscanRifle rifleComponent = prefab.GetComponent<HitscanRifle>();
+                if (rifleComponent != null)
                 {
-                    HitscanRifle rifleComponent = prefab.GetComponent<HitscanRifle>();
-                    if (rifleComponent != null)
+                    SerializedObject rifleSo = new SerializedObject(rifleComponent);
+                    SetFloat(rifleSo, "damage", 34f);
+                    SetFloat(rifleSo, "fireRate", 9f);
+                    SetFloat(rifleSo, "spreadDegrees", 1.35f);
+                    if (bloodImpactPrefab != null)
                     {
-                        SerializedObject rifleSo = new SerializedObject(rifleComponent);
                         SetObject(rifleSo, "bloodImpactPrefab", bloodImpactPrefab);
-                        rifleSo.ApplyModifiedPropertiesWithoutUndo();
                     }
+                    rifleSo.ApplyModifiedPropertiesWithoutUndo();
                 }
                 return prefab;
             }
@@ -200,10 +203,10 @@ namespace LiteRealm.EditorTools
             SerializedObject so = new SerializedObject(rifle);
             SetString(so, "weaponId", "weapon.rifle.basic");
             SetString(so, "weaponDisplayName", "Ranger Rifle");
-            SetFloat(so, "damage", 28f);
-            SetFloat(so, "fireRate", 8.5f);
+            SetFloat(so, "damage", 34f);
+            SetFloat(so, "fireRate", 9f);
             SetFloat(so, "range", 140f);
-            SetFloat(so, "spreadDegrees", 1.6f);
+            SetFloat(so, "spreadDegrees", 1.35f);
             SetInt(so, "magazineSize", 30);
             SetFloat(so, "reloadDuration", 1.5f);
             SetFloat(so, "recoilPitch", 1.15f);
@@ -227,6 +230,15 @@ namespace LiteRealm.EditorTools
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ZombiePrefabPath);
             if (prefab != null)
             {
+                HealthComponent existingHealth = prefab.GetComponent<HealthComponent>();
+                if (existingHealth != null)
+                {
+                    SerializedObject existingHealthSo = new SerializedObject(existingHealth);
+                    SetFloat(existingHealthSo, "maxHealth", 70f);
+                    SetBool(existingHealthSo, "destroyOnDeath", false);
+                    SetBool(existingHealthSo, "disableGameObjectOnDeath", true);
+                    existingHealthSo.ApplyModifiedPropertiesWithoutUndo();
+                }
                 return prefab;
             }
 
@@ -241,7 +253,7 @@ namespace LiteRealm.EditorTools
 
             HealthComponent health = root.AddComponent<HealthComponent>();
             SerializedObject healthSo = new SerializedObject(health);
-            SetFloat(healthSo, "maxHealth", 90f);
+            SetFloat(healthSo, "maxHealth", 70f);
             SetBool(healthSo, "destroyOnDeath", false);
             SetBool(healthSo, "disableGameObjectOnDeath", true);
             healthSo.ApplyModifiedPropertiesWithoutUndo();

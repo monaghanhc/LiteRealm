@@ -41,6 +41,20 @@ namespace LiteRealm.EditorTools
             CheckTags(report);
             CheckLayers(report);
             CheckContentPresence(report);
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isPlaying)
+            {
+                report.Results.Add(new DoctorCheckResult
+                {
+                    Code = "PLAYMODE_SCENE_CHECKS_SKIPPED",
+                    Passed = true,
+                    Severity = DoctorSeverity.Info,
+                    Message = "Skipped scene-structure checks because Unity is entering or in Play mode.",
+                    FixHint = string.Empty
+                });
+                return report;
+            }
+
             CheckMainSceneStructure(report);
             CheckCombatAndEnemySetup(report);
             CheckTimeAndSurvivalSetup(report);
@@ -889,11 +903,16 @@ namespace LiteRealm.EditorTools
                     "Assign HP/Stamina/Hunger/Thirst bars, time text, player stats, and day-night refs."));
 
                 GameOverController gameOver = FindComponentInScene<GameOverController>(scene);
-                bool hasGameOver = gameOver != null;
+                bool hasRuntimeGameOverFallback = Type.GetType("LiteRealm.Core.PhaseOneRuntimeBootstrap, Assembly-CSharp") != null;
+                bool hasGameOver = gameOver != null || hasRuntimeGameOverFallback;
                 report.Results.Add(BuildStep2Check(
                     "GAMEOVER_CONTROLLER",
                     hasGameOver,
-                    hasGameOver ? "GameOverController found." : "GameOverController missing.",
+                    gameOver != null
+                        ? "GameOverController found."
+                        : (hasRuntimeGameOverFallback
+                            ? "GameOverController missing in scene, but runtime bootstrap fallback is available."
+                            : "GameOverController missing."),
                     "Add GameOverController to UI Canvas or rely on runtime bootstrap fallback."));
 
                 SpawnerZone[] spawners = FindComponentsInScene<SpawnerZone>(scene);

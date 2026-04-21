@@ -3,6 +3,7 @@ using LiteRealm.Combat;
 using LiteRealm.Player;
 using LiteRealm.Saving;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -25,7 +26,7 @@ namespace LiteRealm.UI
 
         [Header("Flow")]
         [SerializeField] private bool disablePlayerControlOnDeath = true;
-        [SerializeField] private bool autoReturnToMainMenu = true;
+        [SerializeField] private bool autoReturnToMainMenu = false;
         [SerializeField] private float autoReturnDelaySeconds = 4f;
         [SerializeField] private string mainMenuSceneName = "MainMenu";
         [SerializeField] private string gameOverMessage = "YOU DIED";
@@ -35,6 +36,7 @@ namespace LiteRealm.UI
 
         private void Awake()
         {
+            EnsureEventSystemExists();
             ResolveUiReferences();
 
             if (gameOverPanel != null)
@@ -69,6 +71,21 @@ namespace LiteRealm.UI
 
         private void Update()
         {
+            if (playerStats == null)
+            {
+                ResolvePlayerReferences();
+                if (playerStats != null)
+                {
+                    playerStats.Died -= OnPlayerDied;
+                    playerStats.Died += OnPlayerDied;
+                }
+            }
+
+            if (gameOverPanel == null)
+            {
+                ResolveUiReferences();
+            }
+
             if (!gameOverShown && playerStats != null && playerStats.IsDead)
             {
                 OnPlayerDied();
@@ -128,6 +145,15 @@ namespace LiteRealm.UI
                 }
 
                 autoReturnRoutine = StartCoroutine(AutoReturnToMenuRoutine());
+            }
+
+            if (restartButton != null)
+            {
+                EventSystem current = EventSystem.current;
+                if (current != null)
+                {
+                    current.SetSelectedGameObject(restartButton.gameObject);
+                }
             }
         }
 
@@ -344,10 +370,49 @@ namespace LiteRealm.UI
             subtext.fontSize = 24;
             subtext.alignment = TextAnchor.MiddleCenter;
             subtext.color = new Color(0.92f, 0.92f, 0.92f, 1f);
-            subtext.text = "Returning to Main Menu...";
+            subtext.text = autoReturnToMainMenu ? "Returning to Main Menu..." : "Choose an option to continue";
+
+            restartButton = CreateRuntimeButton(panel.transform, "RestartButton", "Restart", new Vector2(0f, -110f));
+            mainMenuButton = CreateRuntimeButton(panel.transform, "MainMenuButton", "Main Menu", new Vector2(0f, -170f));
 
             gameOverPanel = panel;
             gameOverText = title;
+        }
+
+        private static Button CreateRuntimeButton(Transform parent, string name, string label, Vector2 anchoredPos)
+        {
+            GameObject buttonGo = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonGo.transform.SetParent(parent, false);
+
+            RectTransform rect = buttonGo.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(260f, 46f);
+            rect.anchoredPosition = anchoredPos;
+
+            Image bg = buttonGo.GetComponent<Image>();
+            bg.color = new Color(0.2f, 0.2f, 0.26f, 1f);
+            bg.raycastTarget = true;
+
+            Button button = buttonGo.GetComponent<Button>();
+
+            GameObject textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            textGo.transform.SetParent(buttonGo.transform, false);
+            RectTransform textRect = textGo.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            Text text = textGo.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 24;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+            text.text = label;
+
+            return button;
         }
 
         private static GameObject FindChildByName(Transform root, string childName)
@@ -372,6 +437,30 @@ namespace LiteRealm.UI
             }
 
             return null;
+        }
+
+        private static void EnsureEventSystemExists()
+        {
+            EventSystem eventSystem = Object.FindObjectOfType<EventSystem>();
+            if (eventSystem == null)
+            {
+                GameObject eventSystemGo = new GameObject("EventSystem");
+                eventSystem = eventSystemGo.AddComponent<EventSystem>();
+            }
+
+            if (eventSystem.GetComponent("UnityEngine.InputSystem.UI.InputSystemUIInputModule") == null
+                && eventSystem.GetComponent<StandaloneInputModule>() == null)
+            {
+                System.Type inputSystemModuleType = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                if (inputSystemModuleType != null)
+                {
+                    eventSystem.gameObject.AddComponent(inputSystemModuleType);
+                }
+                else
+                {
+                    eventSystem.gameObject.AddComponent<StandaloneInputModule>();
+                }
+            }
         }
     }
 }

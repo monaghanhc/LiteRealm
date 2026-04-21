@@ -5,8 +5,28 @@ namespace LiteRealm.Combat
 {
     public class HitscanRifle : WeaponBase
     {
+        private bool _hadHitResult;
+        private bool _lastHitKilled;
+
+        public bool TryConsumeLastHitResult(out bool killed)
+        {
+            if (!_hadHitResult)
+            {
+                killed = false;
+                return false;
+            }
+
+            killed = _lastHitKilled;
+            _hadHitResult = false;
+            _lastHitKilled = false;
+            return true;
+        }
+
         protected override void ExecuteShot(WeaponFireContext context)
         {
+            _hadHitResult = false;
+            _lastHitKilled = false;
+
             if (context.AimCamera == null)
             {
                 return;
@@ -25,6 +45,7 @@ namespace LiteRealm.Combat
             IDamageable damageable = FindDamageable(hit.collider);
             if (damageable != null)
             {
+                bool wasDead = damageable.IsDead;
                 damageable.ApplyDamage(new DamageInfo(
                     Damage,
                     hit.point,
@@ -32,6 +53,8 @@ namespace LiteRealm.Combat
                     shootDirection,
                     context.Instigator,
                     WeaponId));
+                _hadHitResult = true;
+                _lastHitKilled = !wasDead && damageable.IsDead;
                 SpawnBloodImpact(hit.point, hit.normal);
             }
             else

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -25,6 +26,8 @@ namespace LiteRealm.UI
 
         private void Awake()
         {
+            EnsureEventSystemExists();
+
             if (pausePanel != null)
             {
                 pausePanel.SetActive(false);
@@ -176,6 +179,30 @@ namespace LiteRealm.UI
         private void OnExitDesktop()
         {
             Application.Quit();
+        }
+
+        private static void EnsureEventSystemExists()
+        {
+            EventSystem eventSystem = Object.FindObjectOfType<EventSystem>();
+            if (eventSystem == null)
+            {
+                GameObject eventSystemGo = new GameObject("EventSystem");
+                eventSystem = eventSystemGo.AddComponent<EventSystem>();
+            }
+
+            if (eventSystem.GetComponent("UnityEngine.InputSystem.UI.InputSystemUIInputModule") == null
+                && eventSystem.GetComponent<StandaloneInputModule>() == null)
+            {
+                System.Type inputSystemModuleType = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+                if (inputSystemModuleType != null)
+                {
+                    eventSystem.gameObject.AddComponent(inputSystemModuleType);
+                }
+                else
+                {
+                    eventSystem.gameObject.AddComponent<StandaloneInputModule>();
+                }
+            }
         }
     }
 }
