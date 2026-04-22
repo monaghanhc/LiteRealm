@@ -4,6 +4,9 @@
     {
         KillZombies,
         RetrieveItem,
-        DefeatBoss
+        DefeatBoss,
+        RecoverIntel,
+        SecureLocation,
+        ActivateSignal
     }
 }

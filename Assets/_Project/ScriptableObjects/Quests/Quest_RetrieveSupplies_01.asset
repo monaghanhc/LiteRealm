@@ -12,15 +12,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
   m_Name: Quest_RetrieveSupplies_01
   m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
-  questId: quest.retrieve_supplies.01
-  title: Water Run
-  description: Bring back clean water before nightfall.
+  questId: quest.story.road_toll.03
+  title: Old Road Toll
+  description: The recorder points to an abandoned checkpoint where somebody has
+    been sorting salvage by blood type and radio code. Pull the supplies before night
+    turns the road into a feeding lane.
+  storyAct: 'Act I: The Smoke Line'
+  contractType: Supply Contract
+  requiredLevel: 2
+  riskRating: 2
+  locationHint: Ruined checkpoint near the stone walls
   objectives:
   - Type: 1
-    TargetId: item.consumable.water_bottle
-    RequiredCount: 2
-    Description: Collect water bottles
+    TargetId: item.material.scrap
+    RequiredCount: 5
+    ExperienceReward: 90
+    Optional: 0
+    Description: Recover marked scrap from the checkpoint
+  - Type: 1
+    TargetId: item.ammo.rifle
+    RequiredCount: 20
+    ExperienceReward: 90
+    Optional: 0
+    Description: Stockpile rifle rounds for the next push
   rewards:
+  - Item: {fileID: 11400000, guid: a84dd829c8f391443b5a43fe46a9d85d, type: 2}
+    Amount: 2
+    Experience: 180
   - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
     Amount: 1
-    Experience: 125
+    Experience: 0

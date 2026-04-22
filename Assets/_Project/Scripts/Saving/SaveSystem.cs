@@ -164,7 +164,6 @@ namespace LiteRealm.Saving
 
             string json = JsonUtility.ToJson(data, true);
             File.WriteAllText(SavePath, json);
-            Debug.Log($"Saved game to: {SavePath}");
             return true;
         }
 
@@ -234,7 +233,6 @@ namespace LiteRealm.Saving
             }
 
             RestoreContainers(data.World.ContainerStates);
-            Debug.Log($"Loaded game from: {SavePath}");
             return true;
         }
 

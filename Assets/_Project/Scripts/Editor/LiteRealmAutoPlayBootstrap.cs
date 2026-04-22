@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -46,6 +47,12 @@ namespace LiteRealm.EditorTools
 
         private static void TryAutoPrepare()
         {
+            if (IsRunningCommandLineTests())
+            {
+                EditorSceneManager.playModeStartScene = null;
+                return;
+            }
+
             if (!Enabled || EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 return;
@@ -82,6 +89,20 @@ namespace LiteRealm.EditorTools
                 EditorSceneManager.playModeStartScene = sceneAsset;
                 Debug.Log($"LiteRealm: Play Mode Start Scene set to {AssetDatabase.GetAssetPath(sceneAsset)}");
             }
+        }
+
+        private static bool IsRunningCommandLineTests()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], "-runTests", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

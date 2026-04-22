@@ -121,7 +121,10 @@ namespace LiteRealm.UI
 
             if (declineButton != null)
             {
-                declineButton.gameObject.SetActive(state == NpcQuestState.Offer || state == NpcQuestState.InProgress || state == NpcQuestState.ReadyToTurnIn);
+                declineButton.gameObject.SetActive(state == NpcQuestState.Offer
+                                                   || state == NpcQuestState.LockedByLevel
+                                                   || state == NpcQuestState.InProgress
+                                                   || state == NpcQuestState.ReadyToTurnIn);
             }
 
             if (turnInButton != null)
@@ -149,6 +152,11 @@ namespace LiteRealm.UI
                 case NpcQuestState.Offer:
                     bodyText.text = currentNpc.Greeting + "\n\nDo you accept this quest?";
                     break;
+                case NpcQuestState.LockedByLevel:
+                    int required = quest != null ? quest.RequiredLevel : 1;
+                    int current = questManager != null ? questManager.CurrentLevel : 1;
+                    bodyText.text = currentNpc.Greeting + $"\n\nYou need more field experience for this contract. Required Level {required}, current Level {current}.";
+                    break;
                 case NpcQuestState.InProgress:
                     bodyText.text = currentNpc.Greeting + "\n\nKeep going. Objectives are still incomplete.";
                     break;
@@ -172,6 +180,18 @@ namespace LiteRealm.UI
             }
 
             System.Text.StringBuilder builder = new System.Text.StringBuilder();
+            builder.AppendLine($"{quest.StoryAct} | {quest.ContractType} | Risk {quest.RiskRating}/5");
+            if (!string.IsNullOrWhiteSpace(quest.LocationHint))
+            {
+                builder.AppendLine($"Location: {quest.LocationHint}");
+            }
+
+            if (quest.RequiredLevel > 1)
+            {
+                builder.AppendLine($"Required Level: {quest.RequiredLevel}");
+            }
+
+            builder.AppendLine();
             builder.AppendLine(quest.Description);
             builder.AppendLine();
             builder.AppendLine("Objectives:");
@@ -186,7 +206,9 @@ namespace LiteRealm.UI
                 string text = string.IsNullOrWhiteSpace(objective.Description)
                     ? $"{objective.Type} x{objective.RequiredCount}"
                     : $"{objective.Description} x{objective.RequiredCount}";
-                builder.AppendLine($"- {text}");
+                string optional = objective.Optional ? " (optional)" : string.Empty;
+                string objectiveXp = objective.ExperienceReward > 0 ? $" - {objective.ExperienceReward} XP" : string.Empty;
+                builder.AppendLine($"- {text}{optional}{objectiveXp}");
             }
 
             bool hasRewards = false;

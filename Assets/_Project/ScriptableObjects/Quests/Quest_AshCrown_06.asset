@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
+  m_Name: Quest_AshCrown_06
+  m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
+  questId: quest.story.dead_air.07
+  title: Dead Air
+  description: With the core cooling in a jar, the valley is finally quiet enough
+    to hear a human voice on the long band. Secure the last cache and decide whether
+    LiteRealm becomes a refuge or another grave with better walls.
+  storyAct: 'Epilogue: Dead Air'
+  contractType: Recovery Contract
+  requiredLevel: 6
+  riskRating: 3
+  locationHint: Hidden cache beside the lake
+  objectives:
+  - Type: 3
+    TargetId: intel.dead_air_cache
+    RequiredCount: 1
+    ExperienceReward: 240
+    Optional: 0
+    Description: Open the hidden post-Crown cache
+  - Type: 1
+    TargetId: item.special.boss_token
+    RequiredCount: 1
+    ExperienceReward: 120
+    Optional: 0
+    Description: Bring Vale proof that the Crown is dead
+  rewards:
+  - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
+    Amount: 45
+    Experience: 600
+  - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
+    Amount: 2
+    Experience: 0

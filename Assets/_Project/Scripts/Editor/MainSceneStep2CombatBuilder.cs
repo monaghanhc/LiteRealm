@@ -74,6 +74,7 @@ namespace LiteRealm.EditorTools
 
             ConfigurePlayer(scene, player, hub, riflePrefab);
             ConfigureSpawner(scene, world.transform, player, hub, dayNight, zombiePrefab);
+            ConfigureEnemyPatrols(scene, world.transform, player, hub, dayNight, navBootstrap, zombiePrefab);
             ConfigureBoss(scene, app.transform, world.transform, player, hub, dayNight, bossPrefab);
 
             GameObject canvasRoot = GetOrCreateRoot(scene, "UI Canvas");
@@ -321,6 +322,72 @@ namespace LiteRealm.EditorTools
             SetObject(so, "eventHub", hub);
             SetObject(so, "dayNight", dayNight);
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void ConfigureEnemyPatrols(Scene scene, Transform world, Transform player, GameEventHub hub, DayNightCycleManager dayNight, RuntimeNavMeshBootstrap navBootstrap, GameObject zombiePrefab)
+        {
+            if (zombiePrefab == null)
+            {
+                return;
+            }
+
+            Terrain terrain = Object.FindFirstObjectByType<Terrain>();
+            GameObject patrolRoot = GetOrCreateChild(world, "EnemyPatrols");
+            patrolRoot.SetActive(true);
+
+            for (int i = patrolRoot.transform.childCount - 1; i >= 0; i--)
+            {
+                Object.DestroyImmediate(patrolRoot.transform.GetChild(i).gameObject);
+            }
+
+            Vector3[] positions =
+            {
+                new Vector3(150f, 0f, 165f),
+                new Vector3(232f, 0f, 247f),
+                new Vector3(318f, 0f, 290f)
+            };
+
+            for (int i = 0; i < positions.Length; i++)
+            {
+                GameObject patrol = PrefabUtility.InstantiatePrefab(zombiePrefab, scene) as GameObject;
+                if (patrol == null)
+                {
+                    patrol = Object.Instantiate(zombiePrefab);
+                    SceneManager.MoveGameObjectToScene(patrol, scene);
+                }
+
+                patrol.name = $"ZombiePatrol_{i + 1:00}";
+                patrol.transform.SetParent(patrolRoot.transform, true);
+                patrol.transform.position = ToSurface(terrain, positions[i], 0.05f);
+                patrol.transform.rotation = Quaternion.Euler(0f, 40f + (i * 115f), 0f);
+                patrol.SetActive(true);
+                SetEnemyLayerAndTag(patrol);
+
+                ZombieAI zombie = patrol.GetComponent<ZombieAI>();
+                if (zombie != null)
+                {
+                    SerializedObject zombieSo = new SerializedObject(zombie);
+                    SetObject(zombieSo, "target", player);
+                    SetObject(zombieSo, "eventHub", hub);
+                    SetObject(zombieSo, "dayNight", dayNight);
+                    zombieSo.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            patrolRoot.SetActive(false);
+
+            if (navBootstrap != null)
+            {
+                SerializedObject navSo = new SerializedObject(navBootstrap);
+                SerializedProperty activateAfterBuild = navSo.FindProperty("activateAfterBuild");
+                if (activateAfterBuild != null)
+                {
+                    activateAfterBuild.arraySize = 1;
+                    activateAfterBuild.GetArrayElementAtIndex(0).objectReferenceValue = patrolRoot;
+                }
+
+                navSo.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         private static void ConfigureBoss(Scene scene, Transform app, Transform world, Transform player, GameEventHub hub, DayNightCycleManager dayNight, GameObject bossPrefab)

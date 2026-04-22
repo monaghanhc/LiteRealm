@@ -10,6 +10,7 @@ namespace LiteRealm.World
         [Header("Build")]
         [SerializeField] private bool buildOnStart = true;
         [SerializeField] private bool skipBuildWhenNavMeshAlreadyPresent = true;
+        [SerializeField] private GameObject[] activateAfterBuild;
 
         [Header("Source Collection")]
         [SerializeField] private LayerMask includeLayers = ~0;
@@ -32,6 +33,8 @@ namespace LiteRealm.World
             {
                 BuildRuntimeNavMesh();
             }
+
+            ActivateDeferredObjects();
         }
 
         [ContextMenu("Build Runtime NavMesh")]
@@ -115,6 +118,28 @@ namespace LiteRealm.World
         {
             NavMeshTriangulation triangulation = NavMesh.CalculateTriangulation();
             return triangulation.vertices != null && triangulation.vertices.Length > 0;
+        }
+
+        private void ActivateDeferredObjects()
+        {
+            if (!HasAnyNavMeshData())
+            {
+                return;
+            }
+
+            if (activateAfterBuild == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < activateAfterBuild.Length; i++)
+            {
+                GameObject target = activateAfterBuild[i];
+                if (target != null && !target.activeSelf)
+                {
+                    target.SetActive(true);
+                }
+            }
         }
 
         private void OnDrawGizmosSelected()

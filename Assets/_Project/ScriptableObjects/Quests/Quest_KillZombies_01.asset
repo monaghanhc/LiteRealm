@@ -12,15 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
   m_Name: Quest_KillZombies_01
   m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
-  questId: quest.kill_zombies.01
-  title: Thin the Horde
-  description: Clear nearby infected so survivors can move supplies.
+  questId: quest.story.marker12.01
+  title: White Smoke at Marker 12
+  description: Ranger Vale saw white smoke over the old road marker before the radios
+    went quiet. Sweep the campsite, pull what water you can, and prove you can move
+    under pressure before he trusts you with the real work.
+  storyAct: 'Act I: The Smoke Line'
+  contractType: Field Contract
+  requiredLevel: 1
+  riskRating: 1
+  locationHint: Campsite south of the lake
   objectives:
   - Type: 0
     TargetId: zombie.basic
     RequiredCount: 3
-    Description: Kill nearby zombies
+    ExperienceReward: 80
+    Optional: 0
+    Description: Clear infected around Marker 12
+  - Type: 1
+    TargetId: item.consumable.water_bottle
+    RequiredCount: 1
+    ExperienceReward: 50
+    Optional: 0
+    Description: Recover a sealed water bottle from the camp
   rewards:
   - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
-    Amount: 12
-    Experience: 100
+    Amount: 18
+    Experience: 180

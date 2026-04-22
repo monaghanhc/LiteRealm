@@ -23,6 +23,7 @@ namespace LiteRealm.EditorTools
     {
         private const string MaterialFolder = "Assets/_Project/Materials";
         private const string TextureFolder = "Assets/_Project/Materials/GeneratedTextures";
+        private const string MeshFolder = "Assets/_Project/Meshes";
 
         private const string GrassTexturePath = TextureFolder + "/Ground_Grass_Noise.asset";
         private const string DirtTexturePath = TextureFolder + "/Ground_Dirt_Noise.asset";
@@ -125,6 +126,8 @@ namespace LiteRealm.EditorTools
                     BuildPine(root.transform);
                     break;
             }
+
+            BakeTreeChildrenIntoRootMesh(root, TreeMeshPath(path));
 
             if (existed)
             {
@@ -908,6 +911,143 @@ namespace LiteRealm.EditorTools
                 PrefabUtility.SaveAsPrefabAsset(root, path);
                 Object.DestroyImmediate(root);
             }
+        }
+
+        private static string TreeMeshPath(string prefabPath)
+        {
+            return MeshFolder + "/" + Path.GetFileNameWithoutExtension(prefabPath) + "_CombinedMesh.asset";
+        }
+
+        private static void BakeTreeChildrenIntoRootMesh(GameObject root, string meshPath)
+        {
+            EnsureDirectory(MeshFolder);
+
+            MeshFilter[] filters = root.GetComponentsInChildren<MeshFilter>(true);
+            List<CombineInstance> combines = new List<CombineInstance>();
+            List<Material> materials = new List<Material>();
+            Matrix4x4 rootMatrix = root.transform.worldToLocalMatrix;
+
+            for (int i = 0; i < filters.Length; i++)
+            {
+                MeshFilter filter = filters[i];
+                if (filter == null || filter.gameObject == root || filter.sharedMesh == null || filter.sharedMesh.subMeshCount <= 0)
+                {
+                    continue;
+                }
+
+                MeshRenderer renderer = filter.GetComponent<MeshRenderer>();
+                Material[] rendererMaterials = renderer != null ? renderer.sharedMaterials : null;
+                int subMeshCount = Mathf.Max(1, filter.sharedMesh.subMeshCount);
+
+                for (int subMesh = 0; subMesh < subMeshCount; subMesh++)
+                {
+                    combines.Add(new CombineInstance
+                    {
+                        mesh = filter.sharedMesh,
+                        subMeshIndex = Mathf.Min(subMesh, filter.sharedMesh.subMeshCount - 1),
+                        transform = rootMatrix * filter.transform.localToWorldMatrix
+                    });
+
+                    Material material = null;
+                    if (rendererMaterials != null && rendererMaterials.Length > 0)
+                    {
+                        material = rendererMaterials[Mathf.Min(subMesh, rendererMaterials.Length - 1)];
+                    }
+
+                    materials.Add(EnsureTerrainTreeMaterial(material));
+                }
+            }
+
+            if (combines.Count == 0)
+            {
+                return;
+            }
+
+            Mesh combinedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+            if (combinedMesh == null)
+            {
+                combinedMesh = new Mesh
+                {
+                    name = root.name + "_CombinedMesh"
+                };
+                AssetDatabase.CreateAsset(combinedMesh, meshPath);
+            }
+            else
+            {
+                combinedMesh.Clear();
+                combinedMesh.name = root.name + "_CombinedMesh";
+            }
+
+            combinedMesh.indexFormat = IndexFormat.UInt32;
+            combinedMesh.CombineMeshes(combines.ToArray(), false, true, false);
+            combinedMesh.RecalculateBounds();
+            combinedMesh.RecalculateNormals();
+            EditorUtility.SetDirty(combinedMesh);
+
+            MeshFilter rootFilter = GetOrAdd<MeshFilter>(root);
+            rootFilter.sharedMesh = combinedMesh;
+
+            MeshRenderer rootRenderer = GetOrAdd<MeshRenderer>(root);
+            rootRenderer.sharedMaterials = materials.ToArray();
+
+            ClearChildren(root.transform);
+        }
+
+        private static Material EnsureTerrainTreeMaterial(Material source)
+        {
+            EnsureDirectory(MaterialFolder);
+
+            string sourceName = source != null ? source.name : "Default";
+            bool bark = sourceName.ToLowerInvariant().Contains("bark");
+            string path = MaterialFolder + "/M_TerrainTree_" + SanitizeAssetName(sourceName) + ".mat";
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+
+            Shader shader = Shader.Find(bark ? "Nature/Soft Occlusion Bark" : "Nature/Soft Occlusion Leaves");
+            if (shader == null && source != null)
+            {
+                shader = source.shader;
+            }
+
+            if (material == null)
+            {
+                material = new Material(shader != null ? shader : Shader.Find("Standard"))
+                {
+                    name = Path.GetFileNameWithoutExtension(path)
+                };
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else if (shader != null && material.shader != shader)
+            {
+                material.shader = shader;
+            }
+
+            if (source != null && source.HasProperty("_Color") && material.HasProperty("_Color"))
+            {
+                material.color = source.color;
+            }
+
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        private static string SanitizeAssetName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "Default";
+            }
+
+            char[] chars = value.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                char c = chars[i];
+                if (!char.IsLetterOrDigit(c) && c != '_' && c != '-')
+                {
+                    chars[i] = '_';
+                }
+            }
+
+            return new string(chars);
         }
 
         private static void ClearChildren(Transform transform)

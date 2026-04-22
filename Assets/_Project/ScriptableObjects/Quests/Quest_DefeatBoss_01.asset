@@ -12,18 +12,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f4592dabf2d10c49a3d8f7b6db129ed, type: 3}
   m_Name: Quest_DefeatBoss_01
   m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDefinition
-  questId: quest.defeat_boss.01
-  title: Alpha Hunt
-  description: Defeat the Alpha boss in the clearing.
+  questId: quest.story.ash_crown.06
+  title: The Ash Crown
+  description: The relay woke something under the red pillars. Vale calls it the
+    Ash Crown, a swollen signal node wearing a body. Kill it, take the core, and
+    break the valley's nightmare loop.
+  storyAct: 'Act III: The Ash Crown'
+  contractType: Boss Contract
+  requiredLevel: 5
+  riskRating: 5
+  locationHint: Red-pillar clearing at night
   objectives:
+  - Type: 5
+    TargetId: signal.boss_lure
+    RequiredCount: 1
+    ExperienceReward: 180
+    Optional: 0
+    Description: Tune the lure beacon in the arena
   - Type: 2
     TargetId: boss.alpha
     RequiredCount: 1
-    Description: Defeat the Alpha boss
+    ExperienceReward: 420
+    Optional: 0
+    Description: Defeat the Ash Crown
   rewards:
   - Item: {fileID: 11400000, guid: 56fbc4fe601dcc24bb86f34fe09c7e3f, type: 2}
     Amount: 1
-    Experience: 300
+    Experience: 500
   - Item: {fileID: 11400000, guid: a84dd829c8f391443b5a43fe46a9d85d, type: 2}
-    Amount: 2
+    Amount: 3
     Experience: 0

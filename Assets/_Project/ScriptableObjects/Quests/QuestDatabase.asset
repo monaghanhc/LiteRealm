@@ -14,5 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: LiteRealm::LiteRealm.Quests.QuestDatabase
   quests:
   - {fileID: 11400000, guid: 7976e351f36d3544b956c579e592841a, type: 2}
+  - {fileID: 11400000, guid: 2f499f0b0496b184c9ff5654fe8a868f, type: 2}
   - {fileID: 11400000, guid: c84194739b7c7374f81c3871decf14d3, type: 2}
+  - {fileID: 11400000, guid: c61013e4408e4fc449752f5b606899b7, type: 2}
+  - {fileID: 11400000, guid: 485cc1ed165553b409886e5e05c1e93e, type: 2}
   - {fileID: 11400000, guid: eefea962a63622148b146b071b393462, type: 2}
+  - {fileID: 11400000, guid: aa75fad8c1f4f2c4989292639d340600, type: 2}

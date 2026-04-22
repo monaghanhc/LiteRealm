@@ -35,12 +35,22 @@ namespace LiteRealm.Core
         public GameObject Collector;
     }
 
+    [Serializable]
+    public struct ObjectiveSignalEvent
+    {
+        public string ObjectiveId;
+        public int Amount;
+        public GameObject Sender;
+        public GameObject Instigator;
+    }
+
     public class GameEventHub : MonoBehaviour
     {
         public event Action<WeaponFiredEvent> WeaponFired;
         public event Action<EnemyKilledEvent> EnemyKilled;
         public event Action<BossKilledEvent> BossKilled;
         public event Action<ItemCollectedEvent> ItemCollected;
+        public event Action<ObjectiveSignalEvent> ObjectiveSignaled;
         public event Action<bool> NightStateChanged;
         public event Action<float, int> TimeChanged;
 
@@ -62,6 +72,11 @@ namespace LiteRealm.Core
         public void RaiseItemCollected(ItemCollectedEvent data)
         {
             ItemCollected?.Invoke(data);
+        }
+
+        public void RaiseObjectiveSignaled(ObjectiveSignalEvent data)
+        {
+            ObjectiveSignaled?.Invoke(data);
         }
 
         public void RaiseNightStateChanged(bool isNight)

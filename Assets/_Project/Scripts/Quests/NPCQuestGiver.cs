@@ -9,6 +9,7 @@ namespace LiteRealm.Quests
     {
         None,
         Offer,
+        LockedByLevel,
         InProgress,
         ReadyToTurnIn,
         AllCompleted
@@ -65,6 +66,11 @@ namespace LiteRealm.Quests
                 {
                     bool ready = questManager.IsQuestReadyToTurnIn(quest.QuestId);
                     return ready ? NpcQuestState.ReadyToTurnIn : NpcQuestState.InProgress;
+                }
+
+                if (!questManager.MeetsLevelRequirement(quest))
+                {
+                    return NpcQuestState.LockedByLevel;
                 }
 
                 return NpcQuestState.Offer;

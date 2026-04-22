@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.RegularExpressions;
 using LiteRealm.AI;
 using LiteRealm.Combat;
 using LiteRealm.Core;
@@ -17,6 +18,14 @@ namespace LiteRealm.Tests.PlayMode
         [UnityTest]
         public IEnumerator CombatSmoke_ZombiePaths_PlayerCanKill_NoExceptionsFor30Seconds()
         {
+            if (Application.isBatchMode)
+            {
+                LogAssert.Expect(LogType.Warning, new Regex("Internal: deleting an allocation that is older than its permitted lifetime"));
+                LogAssert.Expect(LogType.Warning, new Regex("Internal: deleting an allocation that is older than its permitted lifetime"));
+                LogAssert.Expect(LogType.Warning, new Regex("The tree TreePrototype_A must use the Nature/Soft Occlusion shader"));
+                LogAssert.Expect(LogType.Warning, new Regex("The tree TreePrototype_B must use the Nature/Soft Occlusion shader"));
+            }
+
             Assert.IsTrue(System.IO.File.Exists(ScenePath), $"Scene missing: {ScenePath}");
 
             AsyncOperation load = SceneManager.LoadSceneAsync(ScenePath, LoadSceneMode.Single);
