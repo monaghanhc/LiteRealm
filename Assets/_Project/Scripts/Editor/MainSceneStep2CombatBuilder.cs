@@ -56,6 +56,7 @@ namespace LiteRealm.EditorTools
             SetObject(daySo, "sunLight", FindDirectionalLight(scene));
             SetObject(daySo, "eventHub", hub);
             daySo.ApplyModifiedPropertiesWithoutUndo();
+            ApplyExistingWorldVisuals(scene, world.transform);
 
             ItemDefinition bossToken = GetOrCreateBossToken();
             GameObject projectilePrefab = GetOrCreateProjectilePrefab();
@@ -120,246 +121,81 @@ namespace LiteRealm.EditorTools
 
         private static GameObject GetOrCreateBloodImpactPrefab()
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BloodImpactPrefabPath);
-            if (prefab != null)
-            {
-                return prefab;
-            }
-
-            GameObject root = new GameObject("BloodImpact");
-            ParticleSystem ps = root.AddComponent<ParticleSystem>();
-            var main = ps.main;
-            main.duration = 0.4f;
-            main.loop = false;
-            main.startLifetime = 0.5f;
-            main.startSpeed = 4f;
-            main.startSize = 0.12f;
-            main.startColor = new Color(0.75f, 0.05f, 0.05f);
-            main.gravityModifier = 0.6f;
-            main.maxParticles = 24;
-
-            var emission = ps.emission;
-            emission.enabled = true;
-            emission.rateOverTime = 0f;
-            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 12, 18) });
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Hemisphere;
-            shape.radius = 0.15f;
-
-            var colorOverLifetime = ps.colorOverLifetime;
-            colorOverLifetime.enabled = true;
-            Gradient gradient = new Gradient();
-            gradient.SetKeys(
-                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
-            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
-
-            prefab = PrefabUtility.SaveAsPrefabAsset(root, BloodImpactPrefabPath);
-            Object.DestroyImmediate(root);
-            return prefab;
+            return ProceduralArtKit.UpgradeBloodImpactPrefab(BloodImpactPrefabPath);
         }
 
         private static GameObject GetOrCreateRiflePrefab(GameObject bloodImpactPrefab)
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflePrefabPath);
-            if (prefab != null)
-            {
-                HitscanRifle rifleComponent = prefab.GetComponent<HitscanRifle>();
-                if (rifleComponent != null)
-                {
-                    SerializedObject rifleSo = new SerializedObject(rifleComponent);
-                    SetFloat(rifleSo, "damage", 34f);
-                    SetFloat(rifleSo, "fireRate", 9f);
-                    SetFloat(rifleSo, "spreadDegrees", 1.35f);
-                    if (bloodImpactPrefab != null)
-                    {
-                        SetObject(rifleSo, "bloodImpactPrefab", bloodImpactPrefab);
-                    }
-                    rifleSo.ApplyModifiedPropertiesWithoutUndo();
-                }
-                return prefab;
-            }
-
-            GameObject root = new GameObject("Rifle");
-            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            body.transform.SetParent(root.transform, false);
-            body.transform.localPosition = new Vector3(0f, 0f, 0.2f);
-            body.transform.localScale = new Vector3(0.12f, 0.12f, 0.68f);
-            Object.DestroyImmediate(body.GetComponent<Collider>());
-
-            Transform muzzle = new GameObject("MuzzlePoint").transform;
-            muzzle.SetParent(root.transform, false);
-            muzzle.localPosition = new Vector3(0f, 0f, 0.76f);
-
-            ParticleSystem muzzleFx = muzzle.gameObject.AddComponent<ParticleSystem>();
-            ConfigureBurst(muzzleFx, 0.08f, 0.05f, 0.2f, 9);
-
-            AudioSource audioSource = root.AddComponent<AudioSource>();
-            audioSource.playOnAwake = false;
-            audioSource.spatialBlend = 1f;
-
-            HitscanRifle rifle = root.AddComponent<HitscanRifle>();
-            SerializedObject so = new SerializedObject(rifle);
-            SetString(so, "weaponId", "weapon.rifle.basic");
-            SetString(so, "weaponDisplayName", "Ranger Rifle");
-            SetFloat(so, "damage", 34f);
-            SetFloat(so, "fireRate", 9f);
-            SetFloat(so, "range", 140f);
-            SetFloat(so, "spreadDegrees", 1.35f);
-            SetInt(so, "magazineSize", 30);
-            SetFloat(so, "reloadDuration", 1.5f);
-            SetFloat(so, "recoilPitch", 1.15f);
-            SetFloat(so, "recoilYaw", 0.32f);
-            SetObject(so, "muzzlePoint", muzzle);
-            SetObject(so, "muzzleFlash", muzzleFx);
-            SetObject(so, "shootAudioSource", audioSource);
-            if (bloodImpactPrefab != null)
-            {
-                SetObject(so, "bloodImpactPrefab", bloodImpactPrefab);
-            }
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            prefab = PrefabUtility.SaveAsPrefabAsset(root, RiflePrefabPath);
-            Object.DestroyImmediate(root);
-            return prefab;
+            return ProceduralArtKit.UpgradeRiflePrefab(RiflePrefabPath, bloodImpactPrefab);
         }
 
         private static GameObject GetOrCreateZombiePrefab()
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ZombiePrefabPath);
-            if (prefab != null)
-            {
-                HealthComponent existingHealth = prefab.GetComponent<HealthComponent>();
-                if (existingHealth != null)
-                {
-                    SerializedObject existingHealthSo = new SerializedObject(existingHealth);
-                    SetFloat(existingHealthSo, "maxHealth", 70f);
-                    SetBool(existingHealthSo, "destroyOnDeath", false);
-                    SetBool(existingHealthSo, "disableGameObjectOnDeath", true);
-                    existingHealthSo.ApplyModifiedPropertiesWithoutUndo();
-                }
-                return prefab;
-            }
-
-            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            root.name = "Zombie";
-            SetEnemyLayerAndTag(root);
-            UnityEngine.AI.NavMeshAgent agent = root.AddComponent<UnityEngine.AI.NavMeshAgent>();
-            agent.speed = 2.8f;
-            agent.stoppingDistance = 1.4f;
-            agent.radius = 0.45f;
-            agent.height = 1.8f;
-
-            HealthComponent health = root.AddComponent<HealthComponent>();
-            SerializedObject healthSo = new SerializedObject(health);
-            SetFloat(healthSo, "maxHealth", 70f);
-            SetBool(healthSo, "destroyOnDeath", false);
-            SetBool(healthSo, "disableGameObjectOnDeath", true);
-            healthSo.ApplyModifiedPropertiesWithoutUndo();
-
-            AudioSource groanSource = root.AddComponent<AudioSource>();
-            groanSource.playOnAwake = false;
-            groanSource.spatialBlend = 1f;
-
-            ZombieAI zombie = root.AddComponent<ZombieAI>();
-            SerializedObject zombieSo = new SerializedObject(zombie);
-            SetObject(zombieSo, "audioSource", groanSource);
-            zombieSo.ApplyModifiedPropertiesWithoutUndo();
-
-            root.AddComponent<LootDropper>();
-            prefab = PrefabUtility.SaveAsPrefabAsset(root, ZombiePrefabPath);
-            Object.DestroyImmediate(root);
-            return prefab;
+            return ProceduralArtKit.UpgradeZombiePrefab(ZombiePrefabPath);
         }
 
         private static GameObject GetOrCreateProjectilePrefab()
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath);
-            if (prefab != null)
-            {
-                return prefab;
-            }
-
-            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            root.name = "BossProjectile";
-            root.transform.localScale = Vector3.one * 0.45f;
-            SphereCollider collider = root.GetComponent<SphereCollider>();
-            collider.isTrigger = true;
-
-            Rigidbody rb = root.AddComponent<Rigidbody>();
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-
-            root.AddComponent<BossProjectile>();
-            prefab = PrefabUtility.SaveAsPrefabAsset(root, ProjectilePrefabPath);
-            Object.DestroyImmediate(root);
-            return prefab;
+            return ProceduralArtKit.UpgradeProjectilePrefab(ProjectilePrefabPath);
         }
 
         private static GameObject GetOrCreateBossPrefab(GameObject projectilePrefab, ItemDefinition bossToken)
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BossPrefabPath);
-            if (prefab != null)
+            return ProceduralArtKit.UpgradeBossPrefab(BossPrefabPath, projectilePrefab, bossToken);
+        }
+
+        private static void ApplyExistingWorldVisuals(Scene scene, Transform world)
+        {
+            Terrain terrain = Object.FindFirstObjectByType<Terrain>();
+            if (terrain != null && terrain.terrainData != null)
             {
-                return prefab;
+                ProceduralArtKit.ApplyTerrainSurface(terrain.terrainData);
+                terrain.drawInstanced = true;
+                terrain.treeDistance = 360f;
+                terrain.basemapDistance = 1000f;
+
+                GameObject pine = ProceduralArtKit.EnsureTreePrefab(
+                    "Assets/_Project/Prefabs/Environment/TreePrototype_A.prefab",
+                    ProceduralTreeStyle.Pine);
+                GameObject broadleaf = ProceduralArtKit.EnsureTreePrefab(
+                    "Assets/_Project/Prefabs/Environment/TreePrototype_B.prefab",
+                    ProceduralTreeStyle.Broadleaf);
+                terrain.terrainData.treePrototypes = new[]
+                {
+                    new TreePrototype { prefab = pine, bendFactor = 0.22f },
+                    new TreePrototype { prefab = broadleaf, bendFactor = 0.18f }
+                };
+                EditorUtility.SetDirty(terrain);
+                EditorUtility.SetDirty(terrain.terrainData);
             }
 
-            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            root.name = "Boss";
-            root.transform.localScale = new Vector3(2f, 1.6f, 2f);
-            SetEnemyLayerAndTag(root);
-
-            UnityEngine.AI.NavMeshAgent agent = root.AddComponent<UnityEngine.AI.NavMeshAgent>();
-            agent.speed = 3.4f;
-            agent.stoppingDistance = 2.1f;
-            agent.radius = 0.8f;
-            agent.height = 2.7f;
-
-            HealthComponent health = root.AddComponent<HealthComponent>();
-            SerializedObject healthSo = new SerializedObject(health);
-            SetFloat(healthSo, "maxHealth", 650f);
-            SetBool(healthSo, "destroyOnDeath", false);
-            SetBool(healthSo, "disableGameObjectOnDeath", true);
-            healthSo.ApplyModifiedPropertiesWithoutUndo();
-
-            Transform spitSpawn = new GameObject("SpitSpawnPoint").transform;
-            spitSpawn.SetParent(root.transform, false);
-            spitSpawn.localPosition = new Vector3(0f, 1.8f, 1.1f);
-
-            BossAI boss = root.AddComponent<BossAI>();
-            SerializedObject bossSo = new SerializedObject(boss);
-            SetObject(bossSo, "spitProjectilePrefab", projectilePrefab != null ? projectilePrefab.GetComponent<BossProjectile>() : null);
-            SetObject(bossSo, "spitSpawnPoint", spitSpawn);
-            bossSo.ApplyModifiedPropertiesWithoutUndo();
-
-            LootDropper dropper = root.AddComponent<LootDropper>();
-            SerializedObject dropSo = new SerializedObject(dropper);
-            SetInt(dropSo, "rollCount", 0);
-            SerializedProperty guaranteed = dropSo.FindProperty("guaranteedDrops");
-            if (guaranteed != null)
+            Light sun = FindDirectionalLight(scene);
+            if (sun != null)
             {
-                guaranteed.arraySize = 1;
-                SerializedProperty entry = guaranteed.GetArrayElementAtIndex(0);
-                SerializedProperty itemProp = entry.FindPropertyRelative("Item");
-                SerializedProperty amountProp = entry.FindPropertyRelative("Amount");
-                if (itemProp != null)
-                {
-                    itemProp.objectReferenceValue = bossToken;
-                }
-
-                if (amountProp != null)
-                {
-                    amountProp.intValue = 1;
-                }
+                ProceduralArtKit.ApplySkyRenderSettings(sun);
+                EditorUtility.SetDirty(sun);
             }
 
-            dropSo.ApplyModifiedPropertiesWithoutUndo();
-
-            prefab = PrefabUtility.SaveAsPrefabAsset(root, BossPrefabPath);
-            Object.DestroyImmediate(root);
-            return prefab;
+            if (world != null)
+            {
+                ProceduralArtKit.EnsureCloudBank(world);
+                Transform water = world.Find("WaterPlane");
+                if (water != null)
+                {
+                    Renderer renderer = water.GetComponent<Renderer>();
+                    if (renderer != null)
+                    {
+                        renderer.sharedMaterial = ProceduralArtKit.EnsureStandardMaterial(
+                            ProceduralArtKit.WaterMaterialPath,
+                            new Color(0.17f, 0.42f, 0.62f, 0.62f),
+                            0.72f,
+                            0f,
+                            false,
+                            default,
+                            true);
+                    }
+                }
+            }
         }
 
         private static ItemDefinition GetOrCreateBossToken()
@@ -444,7 +280,7 @@ namespace LiteRealm.EditorTools
 
         private static void ConfigureSpawner(Scene scene, Transform world, Transform player, GameEventHub hub, DayNightCycleManager dayNight, GameObject zombiePrefab)
         {
-            Terrain terrain = Object.FindObjectOfType<Terrain>();
+            Terrain terrain = Object.FindFirstObjectByType<Terrain>();
             GameObject spawnerGo = GetOrCreateChild(world, "ZombieSpawner_01");
             SpawnerZone spawner = GetOrAdd<SpawnerZone>(spawnerGo);
 
@@ -489,7 +325,7 @@ namespace LiteRealm.EditorTools
 
         private static void ConfigureBoss(Scene scene, Transform app, Transform world, Transform player, GameEventHub hub, DayNightCycleManager dayNight, GameObject bossPrefab)
         {
-            Terrain terrain = Object.FindObjectOfType<Terrain>();
+            Terrain terrain = Object.FindFirstObjectByType<Terrain>();
             GameObject bossSpawn = GetOrCreateChild(world, "BossSpawnPoint");
             bossSpawn.transform.position = ToSurface(terrain, new Vector3(500f, 0f, 500f), 0.2f);
             WorldSpawnPoint worldSpawn = GetOrAdd<WorldSpawnPoint>(bossSpawn);

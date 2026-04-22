@@ -62,6 +62,7 @@ namespace LiteRealm.AI
         private float attackTimer;
         private float loseSightTimer;
         private float groanTimer;
+        private readonly RaycastHit[] sightHits = new RaycastHit[12];
 
         private void Awake()
         {
@@ -316,12 +317,33 @@ namespace LiteRealm.AI
 
             direction /= distance;
 
-            if (Physics.Raycast(origin, direction, out RaycastHit hit, distance, sightBlockers, QueryTriggerInteraction.Ignore))
+            int hitCount = Physics.RaycastNonAlloc(origin, direction, sightHits, distance, sightBlockers, QueryTriggerInteraction.Ignore);
+            Transform nearestBlockingTransform = null;
+            float nearestDistance = float.MaxValue;
+            for (int i = 0; i < hitCount; i++)
             {
-                return hit.transform == target || hit.transform.IsChildOf(target);
+                RaycastHit hit = sightHits[i];
+                if (hit.collider == null)
+                {
+                    continue;
+                }
+
+                Transform hitTransform = hit.transform;
+                if (hitTransform == transform || hitTransform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
+                if (hit.distance < nearestDistance)
+                {
+                    nearestDistance = hit.distance;
+                    nearestBlockingTransform = hitTransform;
+                }
             }
 
-            return true;
+            return nearestBlockingTransform == null
+                || nearestBlockingTransform == target
+                || nearestBlockingTransform.IsChildOf(target);
         }
 
         private float GetSightRange()

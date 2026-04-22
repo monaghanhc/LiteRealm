@@ -40,6 +40,7 @@ namespace LiteRealm.EditorTools
             GameObject world = new GameObject("World");
 
             CreateWater(world.transform);
+            CreateCloudBank(world.transform);
             CreateRocks(world.transform, terrain);
             CreateCabin(world.transform, terrain, CabinPoi);
             CreateCampsite(world.transform, terrain, CampsitePoi);
@@ -126,6 +127,7 @@ namespace LiteRealm.EditorTools
             }
 
             data.SetHeights(0, 0, heights);
+            ProceduralArtKit.ApplyTerrainSurface(data);
             ApplyTrees(data);
 
             GameObject terrainGo = Terrain.CreateTerrainGameObject(data);
@@ -139,8 +141,8 @@ namespace LiteRealm.EditorTools
 
         private static void ApplyTrees(TerrainData data)
         {
-            GameObject a = GetOrCreateTreePrefab(TreePrefabAPath, 1f, new Color(0.20f, 0.42f, 0.16f));
-            GameObject b = GetOrCreateTreePrefab(TreePrefabBPath, 1.3f, new Color(0.16f, 0.36f, 0.14f));
+            GameObject a = ProceduralArtKit.EnsureTreePrefab(TreePrefabAPath, ProceduralTreeStyle.Pine);
+            GameObject b = ProceduralArtKit.EnsureTreePrefab(TreePrefabBPath, ProceduralTreeStyle.Broadleaf);
 
             data.treePrototypes = new[]
             {
@@ -149,7 +151,9 @@ namespace LiteRealm.EditorTools
             };
 
             List<TreeInstance> trees = new List<TreeInstance>();
-            for (int i = 0; i < 700; i++)
+            Random.State randomState = Random.state;
+            Random.InitState(2701);
+            for (int i = 0; i < 980; i++)
             {
                 float nx = Random.Range(0.02f, 0.98f);
                 float nz = Random.Range(0.02f, 0.98f);
@@ -170,44 +174,17 @@ namespace LiteRealm.EditorTools
                 {
                     position = new Vector3(nx, yNorm, nz),
                     prototypeIndex = Random.Range(0, 2),
-                    widthScale = Random.Range(0.85f, 1.35f),
-                    heightScale = Random.Range(0.9f, 1.45f),
+                    widthScale = Random.Range(0.72f, 1.28f),
+                    heightScale = Random.Range(0.88f, 1.5f),
                     color = Color.Lerp(new Color(0.85f, 0.95f, 0.85f), Color.white, Random.value),
                     lightmapColor = Color.white
                 });
             }
 
             data.treeInstances = trees.ToArray();
+            Random.state = randomState;
         }
 
-        private static GameObject GetOrCreateTreePrefab(string path, float trunkHeight, Color leaf)
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (prefab != null)
-            {
-                return prefab;
-            }
-
-            EnsureDirectory(Path.GetDirectoryName(path));
-            GameObject root = new GameObject(Path.GetFileNameWithoutExtension(path));
-            GameObject trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            trunk.transform.SetParent(root.transform, false);
-            trunk.transform.localPosition = new Vector3(0f, trunkHeight * 0.5f, 0f);
-            trunk.transform.localScale = new Vector3(0.25f, trunkHeight * 0.5f, 0.25f);
-            Object.DestroyImmediate(trunk.GetComponent<Collider>());
-            trunk.GetComponent<Renderer>().sharedMaterial = NewColorMat(new Color(0.42f, 0.28f, 0.17f));
-
-            GameObject crown = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            crown.transform.SetParent(root.transform, false);
-            crown.transform.localPosition = new Vector3(0f, trunkHeight + 0.6f, 0f);
-            crown.transform.localScale = Vector3.one * 1.3f;
-            Object.DestroyImmediate(crown.GetComponent<Collider>());
-            crown.GetComponent<Renderer>().sharedMaterial = NewColorMat(leaf);
-
-            prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
-            Object.DestroyImmediate(root);
-            return prefab;
-        }
         private static void CreateWater(Transform parent)
         {
             GameObject water = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -215,14 +192,30 @@ namespace LiteRealm.EditorTools
             water.transform.SetParent(parent);
             water.transform.position = new Vector3(300f, 17f, 300f);
             water.transform.localScale = new Vector3(60f, 1f, 60f);
-            water.GetComponent<Renderer>().sharedMaterial = NewColorMat(new Color(0.20f, 0.40f, 0.58f));
+            water.GetComponent<Renderer>().sharedMaterial = ProceduralArtKit.EnsureStandardMaterial(
+                ProceduralArtKit.WaterMaterialPath,
+                new Color(0.17f, 0.42f, 0.62f, 0.62f),
+                0.72f,
+                0f,
+                false,
+                default,
+                true);
+        }
+
+        private static void CreateCloudBank(Transform parent)
+        {
+            ProceduralArtKit.EnsureCloudBank(parent);
         }
 
         private static void CreateRocks(Transform parent, Terrain terrain)
         {
             Transform root = new GameObject("RockField").transform;
             root.SetParent(parent);
-            Material rock = NewColorMat(new Color(0.48f, 0.48f, 0.46f));
+            Material rock = ProceduralArtKit.EnsureStandardMaterial(
+                ProceduralArtKit.RockMaterialPath,
+                new Color(0.43f, 0.43f, 0.40f),
+                0.32f,
+                0f);
 
             for (int i = 0; i < 90; i++)
             {
@@ -415,10 +408,7 @@ namespace LiteRealm.EditorTools
             light.shadowNormalBias = 0.4f;
             light.shadows = LightShadows.Soft;
             lightGo.transform.rotation = Quaternion.Euler(45f, -26f, 0f);
-            RenderSettings.sun = light;
-            RenderSettings.fog = true;
-            RenderSettings.fogColor = new Color(0.68f, 0.76f, 0.82f);
-            RenderSettings.fogDensity = 0.0015f;
+            ProceduralArtKit.ApplySkyRenderSettings(light);
         }
 
         private static void CreateGlobalVolume(GameObject appRoot)

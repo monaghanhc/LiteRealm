@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LiteRealm.Core;
 using LiteRealm.World;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace LiteRealm.AI
 {
@@ -82,7 +83,13 @@ namespace LiteRealm.AI
             }
 
             Transform spawnPoint = GetNextSpawnPoint();
-            ZombieAI zombie = Instantiate(zombiePrefab, spawnPoint.position, spawnPoint.rotation);
+            Vector3 spawnPosition = spawnPoint.position;
+            if (NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+            {
+                spawnPosition = hit.position;
+            }
+
+            ZombieAI zombie = Instantiate(zombiePrefab, spawnPosition, spawnPoint.rotation);
             zombie.Initialize(target, eventHub, dayNight);
             zombie.ZombieDied += OnZombieDied;
             alive.Add(zombie);
