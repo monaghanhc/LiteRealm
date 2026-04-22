@@ -52,10 +52,32 @@ namespace LiteRealm.EditorTools
             saveStatusRect.anchorMax = new Vector2(0.5f, 0.58f);
             saveStatusRect.sizeDelta = new Vector2(520f, 32f);
 
-            Button newGameButton = CreateButton(mainPanel.transform, "NewGameButton", "New Game", 0.46f);
-            Button resumeButton = CreateButton(mainPanel.transform, "ResumeButton", "Resume", 0.36f);
-            Button settingsButton = CreateButton(mainPanel.transform, "SettingsButton", "Settings", 0.26f);
-            Button quitButton = CreateButton(mainPanel.transform, "QuitButton", "Quit", 0.16f);
+            Button newGameButton = CreateButton(mainPanel.transform, "NewGameButton", "New Game", 0.50f);
+            Button resumeButton = CreateButton(mainPanel.transform, "ResumeButton", "Resume", 0.40f);
+            Button lanButton = CreateButton(mainPanel.transform, "LanButton", "LAN Co-op", 0.30f);
+            Button settingsButton = CreateButton(mainPanel.transform, "SettingsButton", "Settings", 0.20f);
+            Button quitButton = CreateButton(mainPanel.transform, "QuitButton", "Quit", 0.10f);
+
+            GameObject lanPanel = CreatePanel(canvasRoot.transform, "LanPanel", new Color(0.045f, 0.06f, 0.07f, 0.98f));
+            lanPanel.SetActive(false);
+
+            CreateText(lanPanel.transform, "LanTitle", "LAN Co-op", 42, Color.white).fontStyle = FontStyle.Bold;
+            RectTransform lanTitleRect = lanPanel.transform.Find("LanTitle").GetComponent<RectTransform>();
+            lanTitleRect.anchorMin = new Vector2(0.5f, 0.84f);
+            lanTitleRect.anchorMax = new Vector2(0.5f, 0.84f);
+            lanTitleRect.anchoredPosition = Vector2.zero;
+
+            Text lanSubtitle = CreateText(lanPanel.transform, "LanStatusText", "Host creates a 4-player local Wi-Fi session. Join uses the host IPv4 address.", 17, new Color(0.78f, 0.86f, 0.88f));
+            RectTransform lanSubtitleRect = lanSubtitle.GetComponent<RectTransform>();
+            lanSubtitleRect.anchorMin = new Vector2(0.5f, 0.74f);
+            lanSubtitleRect.anchorMax = new Vector2(0.5f, 0.74f);
+            lanSubtitleRect.sizeDelta = new Vector2(620f, 46f);
+
+            InputField playerNameInput = CreateLabeledInputField(lanPanel.transform, "PlayerNameInput", "Name", "Player", 0.61f, 24);
+            InputField hostAddressInput = CreateLabeledInputField(lanPanel.transform, "HostAddressInput", "Host IP", "127.0.0.1", 0.49f, 64);
+            Button hostLanButton = CreateButton(lanPanel.transform, "HostLanButton", "Host LAN", 0.34f);
+            Button joinLanButton = CreateButton(lanPanel.transform, "JoinLanButton", "Join LAN", 0.24f);
+            Button lanBackButton = CreateButton(lanPanel.transform, "LanBackButton", "Back", 0.10f);
 
             GameObject settingsPanel = CreatePanel(canvasRoot.transform, "SettingsPanel", new Color(0.06f, 0.06f, 0.12f, 0.98f));
             settingsPanel.SetActive(false);
@@ -215,9 +237,17 @@ namespace LiteRealm.EditorTools
             SetRef(menuSo, "mainPanel", mainPanel);
             SetRef(menuSo, "newGameButton", newGameButton);
             SetRef(menuSo, "resumeButton", resumeButton);
+            SetRef(menuSo, "lanButton", lanButton);
             SetRef(menuSo, "settingsButton", settingsButton);
             SetRef(menuSo, "quitButton", quitButton);
             SetRef(menuSo, "saveStatusText", saveStatusText);
+            SetRef(menuSo, "lanPanel", lanPanel);
+            SetRef(menuSo, "hostLanButton", hostLanButton);
+            SetRef(menuSo, "joinLanButton", joinLanButton);
+            SetRef(menuSo, "lanBackButton", lanBackButton);
+            SetRef(menuSo, "playerNameInput", playerNameInput);
+            SetRef(menuSo, "hostAddressInput", hostAddressInput);
+            SetRef(menuSo, "lanStatusText", lanSubtitle);
             SetRef(menuSo, "settingsPanel", settingsPanel);
             SetRef(menuSo, "settingsController", settingsController);
             menuSo.ApplyModifiedPropertiesWithoutUndo();
@@ -341,6 +371,75 @@ namespace LiteRealm.EditorTools
             text.color = Color.white;
             text.text = label;
             return button;
+        }
+
+        private static InputField CreateLabeledInputField(Transform parent, string name, string label, string placeholder, float anchorY, int characterLimit)
+        {
+            GameObject row = new GameObject(name + "Row", typeof(RectTransform));
+            row.transform.SetParent(parent, false);
+            RectTransform rowRect = row.GetComponent<RectTransform>();
+            rowRect.anchorMin = new Vector2(0.5f, anchorY);
+            rowRect.anchorMax = new Vector2(0.5f, anchorY);
+            rowRect.pivot = new Vector2(0.5f, 0.5f);
+            rowRect.sizeDelta = new Vector2(520f, 42f);
+            rowRect.anchoredPosition = Vector2.zero;
+
+            Text labelText = CreateText(row.transform, "Label", label, 18, Color.white);
+            RectTransform labelRect = labelText.GetComponent<RectTransform>();
+            labelRect.anchorMin = new Vector2(0f, 0.5f);
+            labelRect.anchorMax = new Vector2(0f, 0.5f);
+            labelRect.pivot = new Vector2(0f, 0.5f);
+            labelRect.anchoredPosition = new Vector2(0f, 0f);
+            labelRect.sizeDelta = new Vector2(110f, 30f);
+            labelText.alignment = TextAnchor.MiddleLeft;
+
+            GameObject inputGo = new GameObject(name, typeof(RectTransform));
+            inputGo.transform.SetParent(row.transform, false);
+            RectTransform inputRect = inputGo.GetComponent<RectTransform>();
+            inputRect.anchorMin = new Vector2(0f, 0.5f);
+            inputRect.anchorMax = new Vector2(1f, 0.5f);
+            inputRect.pivot = new Vector2(0.5f, 0.5f);
+            inputRect.offsetMin = new Vector2(128f, -20f);
+            inputRect.offsetMax = new Vector2(0f, 20f);
+
+            Image inputBackground = inputGo.AddComponent<Image>();
+            inputBackground.color = new Color(0.12f, 0.15f, 0.16f, 1f);
+
+            InputField input = inputGo.AddComponent<InputField>();
+            input.characterLimit = characterLimit;
+
+            GameObject textGo = new GameObject("Text", typeof(RectTransform));
+            textGo.transform.SetParent(inputGo.transform, false);
+            RectTransform textRect = textGo.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = new Vector2(10f, 4f);
+            textRect.offsetMax = new Vector2(-10f, -4f);
+            Text inputText = textGo.AddComponent<Text>();
+            inputText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            inputText.fontSize = 18;
+            inputText.alignment = TextAnchor.MiddleLeft;
+            inputText.color = Color.white;
+            inputText.text = placeholder;
+
+            GameObject placeholderGo = new GameObject("Placeholder", typeof(RectTransform));
+            placeholderGo.transform.SetParent(inputGo.transform, false);
+            RectTransform placeholderRect = placeholderGo.GetComponent<RectTransform>();
+            placeholderRect.anchorMin = Vector2.zero;
+            placeholderRect.anchorMax = Vector2.one;
+            placeholderRect.offsetMin = new Vector2(10f, 4f);
+            placeholderRect.offsetMax = new Vector2(-10f, -4f);
+            Text placeholderText = placeholderGo.AddComponent<Text>();
+            placeholderText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            placeholderText.fontSize = 18;
+            placeholderText.alignment = TextAnchor.MiddleLeft;
+            placeholderText.color = new Color(0.55f, 0.62f, 0.64f);
+            placeholderText.text = placeholder;
+
+            input.textComponent = inputText;
+            input.placeholder = placeholderText;
+            input.text = placeholder;
+            return input;
         }
 
         private static Slider CreateLabeledSlider(Transform parent, string name, string label, Vector2 anchorY)
