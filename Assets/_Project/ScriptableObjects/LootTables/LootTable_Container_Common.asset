@@ -18,6 +18,16 @@ MonoBehaviour:
     MaxAmount: 3
     Weight: 0
     Guaranteed: 1
+  - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
+    MinAmount: 12
+    MaxAmount: 30
+    Weight: 0
+    Guaranteed: 1
+  - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
+    MinAmount: 1
+    MaxAmount: 1
+    Weight: 0
+    Guaranteed: 1
   - Item: {fileID: 11400000, guid: 725faea9effdfd347a4ce3265cc13f1c, type: 2}
     MinAmount: 1
     MaxAmount: 2
@@ -28,13 +38,23 @@ MonoBehaviour:
     MaxAmount: 2
     Weight: 1.1
     Guaranteed: 0
-  - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
+  - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
+    MinAmount: 10
+    MaxAmount: 24
+    Weight: 1.2
+    Guaranteed: 0
+  - Item: {fileID: 11400000, guid: 75ebc0c955694edeb2cad60a9aa84552, type: 2}
     MinAmount: 1
     MaxAmount: 1
-    Weight: 0.35
+    Weight: 0.18
     Guaranteed: 0
-  - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
-    MinAmount: 8
-    MaxAmount: 20
-    Weight: 0.9
+  - Item: {fileID: 11400000, guid: 8230f3b1502b4ee5b0b57324eb0fc8bd, type: 2}
+    MinAmount: 1
+    MaxAmount: 1
+    Weight: 0.12
+    Guaranteed: 0
+  - Item: {fileID: 11400000, guid: 18563ca00c5d4af9b8f7c10ca5eadb4f, type: 2}
+    MinAmount: 1
+    MaxAmount: 1
+    Weight: 0.08
     Guaranteed: 0

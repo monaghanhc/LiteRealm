@@ -33,6 +33,7 @@ namespace LiteRealm.EditorTools
             EnsurePauseMenu(canvasRoot);
             EnsureDayNight(appRoot, scene);
             EnsureSurvivalHud(canvasRoot, scene);
+            EnsureMapUi(canvasRoot, scene);
             EnsureInteractionPrompt(canvasRoot, scene);
             EnsureGameOverPanel(canvasRoot, scene);
             EnsureSpawnerNightScaling(worldRoot, appRoot);
@@ -139,6 +140,19 @@ namespace LiteRealm.EditorTools
             SetObject(so, "weaponManager", weaponManager);
             SetObject(so, "dayNight", dayNight);
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        public static MapUIController EnsureMapUi(GameObject canvasRoot, Scene scene)
+        {
+            MapUIController map = GetOrAddComponent<MapUIController>(canvasRoot);
+            GameObject player = FindPlayer(scene);
+            ExplorationInput input = player != null ? player.GetComponent<ExplorationInput>() : null;
+
+            SerializedObject so = new SerializedObject(map);
+            SetObject(so, "player", player != null ? player.transform : null);
+            SetObject(so, "input", input);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return map;
         }
 
         public static void EnsureGameOverPanel(GameObject canvasRoot, Scene scene)

@@ -17,6 +17,7 @@ namespace LiteRealm.Player
         [SerializeField] private KeyCode toggleViewFallbackKey = KeyCode.V;
         [SerializeField] private KeyCode interactFallbackKey = KeyCode.E;
         [SerializeField] private KeyCode reloadFallbackKey = KeyCode.R;
+        [SerializeField] private KeyCode mapFallbackKey = KeyCode.M;
         [SerializeField] private KeyCode fireFallbackKey = KeyCode.Mouse0;
         [SerializeField] private KeyCode aimFallbackKey = KeyCode.Mouse1;
 
@@ -37,6 +38,7 @@ namespace LiteRealm.Player
         private InputAction interactAction;
         private InputAction fireAction;
         private InputAction reloadAction;
+        private InputAction mapAction;
         private InputAction aimAction;
 #endif
 
@@ -188,6 +190,17 @@ namespace LiteRealm.Player
             return Input.GetKeyDown(reloadFallbackKey);
         }
 
+        public bool MapPressedThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (usingInputSystem && mapAction != null && mapAction.WasPressedThisFrame())
+            {
+                return true;
+            }
+#endif
+            return Input.GetKeyDown(mapFallbackKey);
+        }
+
         public bool AimHeld()
         {
 #if ENABLE_INPUT_SYSTEM
@@ -290,6 +303,10 @@ namespace LiteRealm.Player
             reloadAction = actionMap.AddAction("Reload", InputActionType.Button);
             reloadAction.AddBinding("<Keyboard>/r");
             reloadAction.AddBinding("<Gamepad>/buttonNorth");
+
+            mapAction = actionMap.AddAction("Map", InputActionType.Button);
+            mapAction.AddBinding("<Keyboard>/m");
+            mapAction.AddBinding("<Gamepad>/select");
 
             aimAction = actionMap.AddAction("Aim", InputActionType.Button);
             aimAction.AddBinding("<Mouse>/rightButton");

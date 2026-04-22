@@ -13,9 +13,14 @@ MonoBehaviour:
   m_Name: LootTable_Zombie_Common
   m_EditorClassIdentifier: LiteRealm::LiteRealm.Loot.LootTable
   entries:
-  - Item: {fileID: 11400000, guid: 7ff6da7822d1f504e912a405d1c9e4b2, type: 2}
+  - Item: {fileID: 11400000, guid: 8808782b607d469b8cd33938046317cc, type: 2}
     MinAmount: 1
     MaxAmount: 2
+    Weight: 0
+    Guaranteed: 1
+  - Item: {fileID: 11400000, guid: 7ff6da7822d1f504e912a405d1c9e4b2, type: 2}
+    MinAmount: 1
+    MaxAmount: 1
     Weight: 0
     Guaranteed: 1
   - Item: {fileID: 11400000, guid: 725faea9effdfd347a4ce3265cc13f1c, type: 2}
@@ -31,5 +36,10 @@ MonoBehaviour:
   - Item: {fileID: 11400000, guid: 8ad856a43af940e429524b7ca8eaa984, type: 2}
     MinAmount: 4
     MaxAmount: 12
-    Weight: 0.5
+    Weight: 0.55
+    Guaranteed: 0
+  - Item: {fileID: 11400000, guid: 290543cec58fc6c458c8850bd9029858, type: 2}
+    MinAmount: 1
+    MaxAmount: 1
+    Weight: 0.14
     Guaranteed: 0

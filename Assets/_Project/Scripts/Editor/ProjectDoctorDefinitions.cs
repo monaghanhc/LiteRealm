@@ -168,6 +168,10 @@ namespace LiteRealm.EditorTools
             "Assets/_Project/ScriptableObjects/Items/Item_Medkit.asset",
             "Assets/_Project/ScriptableObjects/Items/Item_Scrap.asset",
             "Assets/_Project/ScriptableObjects/Items/Item_RifleAmmo.asset",
+            "Assets/_Project/ScriptableObjects/Items/Item_InfectedResidue.asset",
+            "Assets/_Project/ScriptableObjects/Items/Item_RangerRifle.asset",
+            "Assets/_Project/ScriptableObjects/Items/Item_PumpShotgun.asset",
+            "Assets/_Project/ScriptableObjects/Items/Item_ServicePistol.asset",
             "Assets/_Project/ScriptableObjects/Items/Item_BossToken.asset"
         };
 

@@ -29,6 +29,10 @@ namespace LiteRealm.EditorTools
         private const string MedkitItemPath = ItemsDirectory + "/Item_Medkit.asset";
         private const string ScrapItemPath = ItemsDirectory + "/Item_Scrap.asset";
         private const string AmmoItemPath = ItemsDirectory + "/Item_RifleAmmo.asset";
+        private const string InfectedResidueItemPath = ItemsDirectory + "/Item_InfectedResidue.asset";
+        private const string RangerRifleItemPath = ItemsDirectory + "/Item_RangerRifle.asset";
+        private const string PumpShotgunItemPath = ItemsDirectory + "/Item_PumpShotgun.asset";
+        private const string ServicePistolItemPath = ItemsDirectory + "/Item_ServicePistol.asset";
         private const string BossTokenItemPath = ItemsDirectory + "/Item_BossToken.asset";
         private const string ItemDatabasePath = ItemsDirectory + "/ItemDatabase.asset";
 
@@ -120,6 +124,62 @@ namespace LiteRealm.EditorTools
                 0f,
                 false);
 
+            ItemDefinition infectedResidue = GetOrCreateItem(
+                InfectedResidueItemPath,
+                "item.material.infected_residue",
+                "Infected Residue",
+                "A hardened sample stripped from the infected. Traders and crafters will want this later.",
+                ItemRarity.Uncommon,
+                30,
+                false,
+                0f,
+                0f,
+                0f,
+                0f,
+                false);
+
+            ItemDefinition rangerRifle = GetOrCreateItem(
+                RangerRifleItemPath,
+                "item.weapon.ranger_rifle",
+                "Ranger Rifle",
+                "A rugged field rifle recovered from an abandoned cache.",
+                ItemRarity.Rare,
+                1,
+                false,
+                0f,
+                0f,
+                0f,
+                0f,
+                false);
+
+            ItemDefinition pumpShotgun = GetOrCreateItem(
+                PumpShotgunItemPath,
+                "item.weapon.pump_shotgun",
+                "Pump Shotgun",
+                "A close-range survival shotgun with a worn action.",
+                ItemRarity.Uncommon,
+                1,
+                false,
+                0f,
+                0f,
+                0f,
+                0f,
+                false);
+
+            ItemDefinition servicePistol = GetOrCreateItem(
+                ServicePistolItemPath,
+                "item.weapon.service_pistol",
+                "Service Pistol",
+                "A compact sidearm sealed inside a pre-collapse emergency box.",
+                ItemRarity.Uncommon,
+                1,
+                false,
+                0f,
+                0f,
+                0f,
+                0f,
+                false);
+
             ItemDefinition bossToken = GetOrCreateItem(
                 BossTokenItemPath,
                 "item.special.boss_token",
@@ -134,24 +194,42 @@ namespace LiteRealm.EditorTools
                 0f,
                 true);
 
-            List<ItemDefinition> allItems = new List<ItemDefinition> { water, food, medkit, scrap, ammo, bossToken };
+            List<ItemDefinition> allItems = new List<ItemDefinition>
+            {
+                water,
+                food,
+                medkit,
+                scrap,
+                ammo,
+                infectedResidue,
+                rangerRifle,
+                pumpShotgun,
+                servicePistol,
+                bossToken
+            };
             ItemDatabase itemDatabase = GetOrCreateItemDatabase(allItems);
 
             LootTable containerTable = GetOrCreateLootTable(ContainerLootTablePath, new[]
             {
                 new LootEntrySeed(scrap, 1, 3, 0f, true),
+                new LootEntrySeed(ammo, 12, 30, 0f, true),
+                new LootEntrySeed(medkit, 1, 1, 0f, true),
                 new LootEntrySeed(water, 1, 2, 1.1f, false),
                 new LootEntrySeed(food, 1, 2, 1.1f, false),
-                new LootEntrySeed(medkit, 1, 1, 0.35f, false),
-                new LootEntrySeed(ammo, 8, 20, 0.9f, false)
+                new LootEntrySeed(ammo, 10, 24, 1.2f, false),
+                new LootEntrySeed(servicePistol, 1, 1, 0.18f, false),
+                new LootEntrySeed(pumpShotgun, 1, 1, 0.12f, false),
+                new LootEntrySeed(rangerRifle, 1, 1, 0.08f, false)
             });
 
             LootTable zombieTable = GetOrCreateLootTable(ZombieLootTablePath, new[]
             {
-                new LootEntrySeed(scrap, 1, 2, 0f, true),
+                new LootEntrySeed(infectedResidue, 1, 2, 0f, true),
+                new LootEntrySeed(scrap, 1, 1, 0f, true),
                 new LootEntrySeed(water, 1, 1, 0.45f, false),
                 new LootEntrySeed(food, 1, 1, 0.45f, false),
-                new LootEntrySeed(ammo, 4, 12, 0.5f, false)
+                new LootEntrySeed(ammo, 4, 12, 0.55f, false),
+                new LootEntrySeed(medkit, 1, 1, 0.14f, false)
             });
 
             LootTable bossTable = GetOrCreateLootTable(BossLootTablePath, new[]
@@ -205,6 +283,10 @@ namespace LiteRealm.EditorTools
                                || !File.Exists(WaterItemPath)
                                || !File.Exists(FoodItemPath)
                                || !File.Exists(MedkitItemPath)
+                               || !File.Exists(InfectedResidueItemPath)
+                               || !File.Exists(RangerRifleItemPath)
+                               || !File.Exists(PumpShotgunItemPath)
+                               || !File.Exists(ServicePistolItemPath)
                                || !File.Exists(ContainerLootTablePath)
                                || !File.Exists(LootContainerPrefabPath);
 
