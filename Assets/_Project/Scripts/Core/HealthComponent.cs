@@ -16,6 +16,8 @@ namespace LiteRealm.Core
         public float CurrentHealth { get; private set; }
         public float MaxHealth => maxHealth;
         public bool IsDead { get; private set; }
+        public bool DestroyOnDeath => destroyOnDeath;
+        public bool DisableGameObjectOnDeath => disableGameObjectOnDeath;
         public Transform DamageTransform => transform;
 
         private void Awake()
@@ -61,6 +63,12 @@ namespace LiteRealm.Core
 
             CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + amount);
             HealthChanged?.Invoke(CurrentHealth, maxHealth);
+        }
+
+        public void ConfigureDeathObjectHandling(bool destroyOnDeath, bool disableGameObjectOnDeath)
+        {
+            this.destroyOnDeath = destroyOnDeath;
+            this.disableGameObjectOnDeath = disableGameObjectOnDeath;
         }
 
         public void Revive(float healthPercent = 1f)

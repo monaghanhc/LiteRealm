@@ -28,6 +28,9 @@ namespace LiteRealm.AI
         [SerializeField] private float attackRange = 1.8f;
         [SerializeField] private float attackDamage = 10f;
         [SerializeField] private float attackCooldown = 1.15f;
+        [SerializeField] private float attackDamageDelay = 0.32f;
+        [SerializeField] private float attackRecoveryDuration = 0.55f;
+        [SerializeField] private float attackDamageRangePadding = 0.35f;
 
         [Header("Night Modifier")]
         [SerializeField] private float nightMoveSpeedMultiplier = 1.25f;
@@ -40,10 +43,16 @@ namespace LiteRealm.AI
         [SerializeField] private float minGroanInterval = 6f;
         [SerializeField] private float maxGroanInterval = 12f;
 
+        [Header("Death")]
+        [SerializeField] private bool keepCorpseActiveForDeathAnimation = true;
+        [SerializeField] private bool disableCollidersOnDeath = true;
+        [SerializeField] private bool disableAgentOnDeath = true;
+
         [Header("References")]
         [SerializeField] private Transform target;
         [SerializeField] private GameEventHub eventHub;
         [SerializeField] private DayNightCycleManager dayNight;
+        [SerializeField] private ZombiePresentationController presentation;
 
         public event Action<ZombieAI> ZombieDied;
 
@@ -62,12 +71,27 @@ namespace LiteRealm.AI
         private float attackTimer;
         private float loseSightTimer;
         private float groanTimer;
+        private bool attackInProgress;
+        private bool attackDamageApplied;
+        private bool deathHandled;
+        private Coroutine attackRoutine;
         private readonly RaycastHit[] sightHits = new RaycastHit[12];
 
         private void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
             health = GetComponent<HealthComponent>();
+            presentation = presentation != null ? presentation : GetComponent<ZombiePresentationController>();
+            if (presentation == null)
+            {
+                presentation = gameObject.AddComponent<ZombiePresentationController>();
+            }
+
+            if (health != null && keepCorpseActiveForDeathAnimation)
+            {
+                health.ConfigureDeathObjectHandling(false, false);
+            }
+
             spawnOrigin = transform.position;
             ScheduleNextGroan();
         }
@@ -102,6 +126,16 @@ namespace LiteRealm.AI
 
         private void OnDisable()
         {
+            if (attackRoutine != null)
+            {
+                StopCoroutine(attackRoutine);
+                attackRoutine = null;
+            }
+
+            attackInProgress = false;
+            presentation?.SetAttacking(false);
+            presentation?.SetMoving(false, 0f);
+
             if (health != null)
             {
                 health.Died -= OnDeath;
@@ -127,6 +161,7 @@ namespace LiteRealm.AI
 
             if (target == null)
             {
+                UpdatePresentationMovement();
                 return;
             }
 
@@ -138,6 +173,7 @@ namespace LiteRealm.AI
             {
                 loseSightTimer = 0f;
                 ChaseOrAttack(distanceToTarget);
+                UpdatePresentationMovement();
                 return;
             }
 
@@ -145,16 +181,19 @@ namespace LiteRealm.AI
             if (loseSightTimer <= loseTargetDelay)
             {
                 ChaseLastKnownTarget();
+                UpdatePresentationMovement();
                 return;
             }
 
             if (heardRecently)
             {
                 InvestigateHeardPoint();
+                UpdatePresentationMovement();
                 return;
             }
 
             Wander();
+            UpdatePresentationMovement();
         }
 
         public void Initialize(Transform targetTransform, GameEventHub hub, DayNightCycleManager cycle)
@@ -208,6 +247,13 @@ namespace LiteRealm.AI
                 return;
             }
 
+            if (attackInProgress)
+            {
+                agent.isStopped = true;
+                return;
+            }
+
+            presentation?.SetAttacking(false);
             agent.isStopped = false;
             agent.SetDestination(target.position);
         }
@@ -259,7 +305,7 @@ namespace LiteRealm.AI
 
         private void TryAttack()
         {
-            if (attackTimer > 0f)
+            if (attackInProgress || attackTimer > 0f)
             {
                 return;
             }
@@ -275,16 +321,26 @@ namespace LiteRealm.AI
             }
 
             attackTimer = attackCooldown;
-            float damageAmount = attackDamage * (dayNight != null && dayNight.IsNight ? nightDamageMultiplier : 1f);
+            attackInProgress = true;
+            attackDamageApplied = false;
+            presentation?.SetAttacking(true);
 
-            Vector3 direction = (target.position - transform.position).normalized;
-            targetDamageable.ApplyDamage(new DamageInfo(
-                damageAmount,
-                target.position,
-                -direction,
-                direction,
-                gameObject,
-                enemyId));
+            if (attackRoutine != null)
+            {
+                StopCoroutine(attackRoutine);
+            }
+
+            attackRoutine = StartCoroutine(AttackRoutine());
+        }
+
+        public void AnimationEvent_DealAttackDamage()
+        {
+            ApplyAttackDamage();
+        }
+
+        public void AnimationEvent_PlayAttackSound()
+        {
+            presentation?.PlayAttackSound();
         }
 
         private void OnWeaponFired(WeaponFiredEvent data)
@@ -366,7 +422,7 @@ namespace LiteRealm.AI
 
         private void TickGroans()
         {
-            if (audioSource == null || groanClips == null || groanClips.Length == 0)
+            if (attackInProgress || audioSource == null || groanClips == null || groanClips.Length == 0)
             {
                 return;
             }
@@ -387,11 +443,125 @@ namespace LiteRealm.AI
             groanTimer = UnityEngine.Random.Range(minGroanInterval, maxGroanInterval);
         }
 
+        private System.Collections.IEnumerator AttackRoutine()
+        {
+            float damageDelay = Mathf.Max(0f, attackDamageDelay);
+            if (damageDelay > 0f)
+            {
+                yield return new WaitForSeconds(damageDelay);
+            }
+
+            ApplyAttackDamage();
+
+            float remainingRecovery = Mathf.Max(0f, attackRecoveryDuration - damageDelay);
+            if (remainingRecovery > 0f)
+            {
+                yield return new WaitForSeconds(remainingRecovery);
+            }
+
+            attackInProgress = false;
+            attackRoutine = null;
+            presentation?.SetAttacking(false);
+        }
+
+        private void ApplyAttackDamage()
+        {
+            if (IsDead || attackDamageApplied || target == null)
+            {
+                return;
+            }
+
+            if (targetDamageable == null)
+            {
+                ResolveTargetDamageable();
+            }
+
+            if (targetDamageable == null)
+            {
+                return;
+            }
+
+            float maxDamageDistance = attackRange + Mathf.Max(0f, attackDamageRangePadding);
+            if (Vector3.Distance(transform.position, target.position) > maxDamageDistance)
+            {
+                return;
+            }
+
+            attackDamageApplied = true;
+            float damageAmount = attackDamage * (dayNight != null && dayNight.IsNight ? nightDamageMultiplier : 1f);
+            Vector3 direction = (target.position - transform.position).normalized;
+            targetDamageable.ApplyDamage(new DamageInfo(
+                damageAmount,
+                target.position,
+                -direction,
+                direction,
+                gameObject,
+                enemyId));
+        }
+
+        private void UpdatePresentationMovement()
+        {
+            if (presentation == null || agent == null)
+            {
+                return;
+            }
+
+            if (!agent.enabled)
+            {
+                presentation.SetMoving(false, 0f);
+                return;
+            }
+
+            Vector3 velocity = agent.velocity;
+            velocity.y = 0f;
+            bool moving = !agent.isStopped && velocity.sqrMagnitude > 0.04f;
+            presentation.SetMoving(moving, velocity.magnitude);
+        }
+
         private void OnDeath()
         {
+            if (deathHandled)
+            {
+                return;
+            }
+
+            deathHandled = true;
+            attackInProgress = false;
+            attackDamageApplied = true;
+            if (attackRoutine != null)
+            {
+                StopCoroutine(attackRoutine);
+                attackRoutine = null;
+            }
+
+            presentation?.SetAttacking(false);
+            presentation?.SetMoving(false, 0f);
+            presentation?.PlayDeath();
+
             if (agent != null)
             {
-                agent.isStopped = true;
+                if (agent.enabled)
+                {
+                    agent.isStopped = true;
+                    agent.ResetPath();
+
+                    if (disableAgentOnDeath)
+                    {
+                        agent.enabled = false;
+                    }
+                }
+            }
+
+            if (disableCollidersOnDeath)
+            {
+                Collider[] colliders = GetComponentsInChildren<Collider>();
+                for (int i = 0; i < colliders.Length; i++)
+                {
+                    if (colliders[i] != null)
+                    {
+                        colliders[i].enabled = false;
+                    }
+                }
             }
 
             eventHub?.RaiseEnemyKilled(new EnemyKilledEvent

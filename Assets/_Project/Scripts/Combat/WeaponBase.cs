@@ -39,12 +39,24 @@ namespace LiteRealm.Combat
         [SerializeField] private AudioSource shootAudioSource;
         [SerializeField] private AudioClip shootClip;
         [SerializeField] private AudioClip reloadClip;
+        [SerializeField] private AudioClip emptyMagazineClip;
         [SerializeField] private AudioClip impactClip;
         [SerializeField] private GameObject impactEffectPrefab;
         [SerializeField] private GameObject bloodImpactPrefab;
 
+        [Header("Audio Tuning")]
+        [SerializeField] [Range(0f, 1f)] private float shootVolume = 0.9f;
+        [SerializeField] [Range(0f, 1f)] private float reloadVolume = 0.8f;
+        [SerializeField] [Range(0f, 1f)] private float emptyMagazineVolume = 0.65f;
+        [SerializeField] private Vector2 shootPitchRange = new Vector2(0.96f, 1.04f);
+        [SerializeField] private Vector2 reloadPitchRange = new Vector2(0.98f, 1.03f);
+        [SerializeField] private Vector2 emptyMagazinePitchRange = new Vector2(0.92f, 1.08f);
+        [SerializeField] private float emptyMagazineCooldown = 0.22f;
+
         public event Action<WeaponBase> Fired;
         public event Action<WeaponBase> AmmoChanged;
+        public event Action<WeaponBase> ReloadStarted;
+        public event Action<WeaponBase> EmptyMagazineTriggered;
 
         public string WeaponId => weaponId;
         public string WeaponDisplayName => weaponDisplayName;
@@ -78,21 +90,39 @@ namespace LiteRealm.Combat
         }
 
         private float nextAllowedShotTime;
+        private float nextAllowedEmptyClickTime;
         private AudioClip _runtimeShootClip;
         private AudioClip _runtimeReloadClip;
+        private AudioClip _runtimeEmptyMagazineClip;
         private AudioClip _runtimeImpactClip;
 
         protected virtual void Awake()
         {
             CurrentAmmo = MagazineSize;
             nextAllowedShotTime = 0f;
-            if (shootAudioSource != null && shootClip == null)
+            if (shootAudioSource == null)
+            {
+                shootAudioSource = GetComponent<AudioSource>();
+                if (shootAudioSource == null)
+                {
+                    shootAudioSource = gameObject.AddComponent<AudioSource>();
+                }
+            }
+
+            shootAudioSource.playOnAwake = false;
+            shootAudioSource.spatialBlend = 1f;
+
+            if (shootClip == null)
             {
                 _runtimeShootClip = ProceduralAudio.CreateShootClip();
             }
-            if (shootAudioSource != null && reloadClip == null)
+            if (reloadClip == null)
             {
                 _runtimeReloadClip = ProceduralAudio.CreateReloadClip();
+            }
+            if (emptyMagazineClip == null)
+            {
+                _runtimeEmptyMagazineClip = ProceduralAudio.CreateEmptyMagazineClip();
             }
             if (impactClip == null)
             {
@@ -102,9 +132,10 @@ namespace LiteRealm.Combat
 
         private void OnDestroy()
         {
-            if (_runtimeShootClip != null) Destroy(_runtimeShootClip);
-            if (_runtimeReloadClip != null) Destroy(_runtimeReloadClip);
-            if (_runtimeImpactClip != null) Destroy(_runtimeImpactClip);
+            DestroyRuntimeClip(_runtimeShootClip);
+            DestroyRuntimeClip(_runtimeReloadClip);
+            DestroyRuntimeClip(_runtimeEmptyMagazineClip);
+            DestroyRuntimeClip(_runtimeImpactClip);
         }
 
         public bool TryFire(WeaponFireContext context)
@@ -121,6 +152,7 @@ namespace LiteRealm.Combat
 
             if (CurrentAmmo <= 0)
             {
+                PlayEmptyMagazinePresentation();
                 return false;
             }
 
@@ -205,10 +237,8 @@ namespace LiteRealm.Combat
         {
             IsReloading = true;
             AudioClip reload = reloadClip != null ? reloadClip : _runtimeReloadClip;
-            if (shootAudioSource != null && reload != null)
-            {
-                shootAudioSource.PlayOneShot(reload);
-            }
+            PlayWeaponClip(reload, reloadVolume, reloadPitchRange);
+            ReloadStarted?.Invoke(this);
             yield return new WaitForSeconds(ReloadDuration);
             CurrentAmmo = MagazineSize;
             IsReloading = false;
@@ -223,9 +253,49 @@ namespace LiteRealm.Combat
             }
 
             AudioClip shoot = shootClip != null ? shootClip : _runtimeShootClip;
-            if (shootAudioSource != null && shoot != null)
+            PlayWeaponClip(shoot, shootVolume, shootPitchRange);
+        }
+
+        private void PlayEmptyMagazinePresentation()
+        {
+            if (Time.time < nextAllowedEmptyClickTime)
             {
-                shootAudioSource.PlayOneShot(shoot);
+                return;
+            }
+
+            nextAllowedEmptyClickTime = Time.time + Mathf.Max(0f, emptyMagazineCooldown);
+            AudioClip empty = emptyMagazineClip != null ? emptyMagazineClip : _runtimeEmptyMagazineClip;
+            PlayWeaponClip(empty, emptyMagazineVolume, emptyMagazinePitchRange);
+            EmptyMagazineTriggered?.Invoke(this);
+        }
+
+        private void PlayWeaponClip(AudioClip clip, float volume, Vector2 pitchRange)
+        {
+            if (shootAudioSource == null || clip == null)
+            {
+                return;
+            }
+
+            shootAudioSource.pitch = UnityEngine.Random.Range(
+                Mathf.Min(pitchRange.x, pitchRange.y),
+                Mathf.Max(pitchRange.x, pitchRange.y));
+            shootAudioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+        }
+
+        private static void DestroyRuntimeClip(AudioClip clip)
+        {
+            if (clip == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(clip);
+            }
+            else
+            {
+                DestroyImmediate(clip);
             }
         }
     }

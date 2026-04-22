@@ -225,6 +225,7 @@ namespace LiteRealm.EditorTools
         private static void ConfigurePlayer(Scene scene, Transform player, GameEventHub hub, GameObject riflePrefab)
         {
             GetOrAdd<PlayerStats>(player.gameObject);
+            GetOrAdd<PlayerDamageAudioController>(player.gameObject);
             ExplorationInput input = GetOrAdd<ExplorationInput>(player.gameObject);
             WeaponManager manager = GetOrAdd<WeaponManager>(player.gameObject);
 

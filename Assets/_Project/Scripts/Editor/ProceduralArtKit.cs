@@ -369,22 +369,32 @@ namespace LiteRealm.EditorTools
             SerializedObject healthSo = new SerializedObject(health);
             SetFloat(healthSo, "maxHealth", 90f);
             SetBool(healthSo, "destroyOnDeath", false);
-            SetBool(healthSo, "disableGameObjectOnDeath", true);
+            SetBool(healthSo, "disableGameObjectOnDeath", false);
             healthSo.ApplyModifiedPropertiesWithoutUndo();
 
             AudioSource groanSource = GetOrAdd<AudioSource>(root);
             groanSource.playOnAwake = false;
             groanSource.spatialBlend = 1f;
+            Animator animator = GetOrAdd<Animator>(root);
+            ZombiePresentationController presentation = GetOrAdd<ZombiePresentationController>(root);
 
             ZombieAI zombie = GetOrAdd<ZombieAI>(root);
             SerializedObject zombieSo = new SerializedObject(zombie);
             SetFloat(zombieSo, "baseMoveSpeed", 2.85f);
             SetFloat(zombieSo, "sightRange", 24f);
             SetObject(zombieSo, "audioSource", groanSource);
+            SetObject(zombieSo, "presentation", presentation);
             zombieSo.ApplyModifiedPropertiesWithoutUndo();
 
             GetOrAdd<LootDropper>(root);
             BuildZombieVisual(root.transform);
+
+            Transform model = root.transform.Find("Model");
+            SerializedObject presentationSo = new SerializedObject(presentation);
+            SetObject(presentationSo, "animator", animator);
+            SetObject(presentationSo, "audioSource", groanSource);
+            SetObject(presentationSo, "proceduralModelRoot", model);
+            presentationSo.ApplyModifiedPropertiesWithoutUndo();
 
             SavePrefab(root, path, existed);
             return AssetDatabase.LoadAssetAtPath<GameObject>(path);

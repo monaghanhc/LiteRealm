@@ -51,6 +51,7 @@ namespace LiteRealm.Player
         [SerializeField] private float zeroThirstHealthDamagePerSecond = 2f;
 
         public event Action<PlayerStatsSnapshot> StatsChanged;
+        public event Action<DamageInfo> Damaged;
         public event Action Died;
 
         public float CurrentHealth { get; private set; }
@@ -72,6 +73,7 @@ namespace LiteRealm.Player
             CurrentHunger = maxHunger;
             CurrentThirst = maxThirst;
             deathEventRaised = false;
+            EnsureDamageAudioFeedback();
             NotifyChanged();
         }
 
@@ -87,7 +89,13 @@ namespace LiteRealm.Player
                 return;
             }
 
+            float previousHealth = CurrentHealth;
             ApplyHealthLoss(damageInfo.Amount);
+            if (CurrentHealth < previousHealth)
+            {
+                Damaged?.Invoke(damageInfo);
+            }
+
             NotifyChanged();
         }
 
@@ -280,6 +288,14 @@ namespace LiteRealm.Player
         private void NotifyChanged()
         {
             StatsChanged?.Invoke(GetSnapshot());
+        }
+
+        private void EnsureDamageAudioFeedback()
+        {
+            if (GetComponent<PlayerDamageAudioController>() == null)
+            {
+                gameObject.AddComponent<PlayerDamageAudioController>();
+            }
         }
     }
 }
