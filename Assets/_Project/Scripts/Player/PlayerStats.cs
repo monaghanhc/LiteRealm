@@ -296,6 +296,11 @@ namespace LiteRealm.Player
             {
                 gameObject.AddComponent<PlayerDamageAudioController>();
             }
+
+            if (GetComponent<PlayerImpactFeedbackController>() == null)
+            {
+                gameObject.AddComponent<PlayerImpactFeedbackController>();
+            }
         }
     }
 }

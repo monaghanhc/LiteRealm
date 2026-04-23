@@ -113,6 +113,25 @@ namespace LiteRealm.Core
             return clip;
         }
 
+        public static AudioClip CreateAmbientWindLoopClip()
+        {
+            float duration = 4f;
+            int samples = Mathf.RoundToInt(SampleRate * duration);
+            float[] data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / samples;
+                float low = Mathf.Sin(2f * Mathf.PI * t) * 0.32f;
+                float mid = Mathf.Sin(2f * Mathf.PI * 3f * t + 1.7f) * 0.18f;
+                float high = Mathf.Sin(2f * Mathf.PI * 11f * t + 0.4f) * 0.035f;
+                data[i] = Mathf.Clamp((low + mid + high) * 0.22f, -1f, 1f);
+            }
+
+            AudioClip clip = AudioClip.Create("ProceduralAmbientWindLoop", samples, 1, SampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
         private static AudioClip CreateNoiseEnvelopeClip(string name, float duration, float gain, float decay, float toneHz)
         {
             int samples = Mathf.RoundToInt(SampleRate * duration);

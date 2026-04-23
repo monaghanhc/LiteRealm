@@ -18,6 +18,13 @@ namespace LiteRealm.AI
         [SerializeField] private float wanderRadius = 15f;
         [SerializeField] private float wanderInterval = 4f;
 
+        [Header("Pathing Quality")]
+        [SerializeField] private float repathInterval = 0.22f;
+        [SerializeField] private float destinationUpdateThreshold = 0.65f;
+        [SerializeField] private float stuckCheckInterval = 1.2f;
+        [SerializeField] private float stuckDistanceThreshold = 0.18f;
+        [SerializeField] private float stuckRecoveryRadius = 2.5f;
+
         [Header("Perception")]
         [SerializeField] private float sightRange = 20f;
         [SerializeField] private float hearingRange = 16f;
@@ -67,13 +74,20 @@ namespace LiteRealm.AI
 
         private Vector3 spawnOrigin;
         private Vector3? heardPosition;
+        private Vector3 lastKnownTargetPosition;
+        private Vector3 lastDestination;
+        private Vector3 lastStuckCheckPosition;
         private float wanderTimer;
         private float attackTimer;
         private float loseSightTimer;
         private float groanTimer;
+        private float nextAllowedPathUpdateTime;
+        private float nextStuckCheckTime;
+        private int stuckSamples;
         private bool attackInProgress;
         private bool attackDamageApplied;
         private bool deathHandled;
+        private GameObject lastDamageInstigator;
         private Coroutine attackRoutine;
         private readonly RaycastHit[] sightHits = new RaycastHit[12];
 
@@ -93,6 +107,9 @@ namespace LiteRealm.AI
             }
 
             spawnOrigin = transform.position;
+            lastKnownTargetPosition = transform.position;
+            lastDestination = transform.position;
+            lastStuckCheckPosition = transform.position;
             ScheduleNextGroan();
         }
 
@@ -100,6 +117,7 @@ namespace LiteRealm.AI
         {
             if (health != null)
             {
+                health.Damaged += OnDamaged;
                 health.Died += OnDeath;
             }
 
@@ -138,6 +156,7 @@ namespace LiteRealm.AI
 
             if (health != null)
             {
+                health.Damaged -= OnDamaged;
                 health.Died -= OnDeath;
             }
 
@@ -161,7 +180,7 @@ namespace LiteRealm.AI
 
             if (target == null)
             {
-                UpdatePresentationMovement();
+                FinalizeAiTick();
                 return;
             }
 
@@ -172,8 +191,9 @@ namespace LiteRealm.AI
             if (canSeeTarget)
             {
                 loseSightTimer = 0f;
+                lastKnownTargetPosition = target.position;
                 ChaseOrAttack(distanceToTarget);
-                UpdatePresentationMovement();
+                FinalizeAiTick();
                 return;
             }
 
@@ -181,19 +201,19 @@ namespace LiteRealm.AI
             if (loseSightTimer <= loseTargetDelay)
             {
                 ChaseLastKnownTarget();
-                UpdatePresentationMovement();
+                FinalizeAiTick();
                 return;
             }
 
             if (heardRecently)
             {
                 InvestigateHeardPoint();
-                UpdatePresentationMovement();
+                FinalizeAiTick();
                 return;
             }
 
             Wander();
-            UpdatePresentationMovement();
+            FinalizeAiTick();
         }
 
         public void Initialize(Transform targetTransform, GameEventHub hub, DayNightCycleManager cycle)
@@ -241,7 +261,7 @@ namespace LiteRealm.AI
         {
             if (distanceToTarget <= attackRange)
             {
-                agent.isStopped = true;
+                SetAgentStopped(true);
                 transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
                 TryAttack();
                 return;
@@ -249,24 +269,24 @@ namespace LiteRealm.AI
 
             if (attackInProgress)
             {
-                agent.isStopped = true;
+                SetAgentStopped(true);
                 return;
             }
 
             presentation?.SetAttacking(false);
-            agent.isStopped = false;
-            agent.SetDestination(target.position);
+            SetAgentStopped(false);
+            SetAgentDestination(target.position);
         }
 
         private void ChaseLastKnownTarget()
         {
-            if (target == null)
+            if (target == null && lastKnownTargetPosition == Vector3.zero)
             {
                 return;
             }
 
-            agent.isStopped = false;
-            agent.SetDestination(target.position);
+            SetAgentStopped(false);
+            SetAgentDestination(lastKnownTargetPosition);
         }
 
         private void InvestigateHeardPoint()
@@ -276,8 +296,8 @@ namespace LiteRealm.AI
                 return;
             }
 
-            agent.isStopped = false;
-            agent.SetDestination(heardPosition.Value);
+            SetAgentStopped(false);
+            SetAgentDestination(heardPosition.Value);
             if (Vector3.Distance(transform.position, heardPosition.Value) <= 1.5f)
             {
                 heardPosition = null;
@@ -298,8 +318,8 @@ namespace LiteRealm.AI
 
             if (NavMesh.SamplePosition(destination, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
             {
-                agent.isStopped = false;
-                agent.SetDestination(hit.position);
+                SetAgentStopped(false);
+                SetAgentDestination(hit.position, true);
             }
         }
 
@@ -355,6 +375,7 @@ namespace LiteRealm.AI
             if (distance <= effectiveRange)
             {
                 heardPosition = data.Position;
+                lastKnownTargetPosition = data.Instigator != null ? data.Instigator.transform.position : data.Position;
                 loseSightTimer = loseTargetDelay;
             }
         }
@@ -416,6 +437,11 @@ namespace LiteRealm.AI
 
         private void UpdateNightModifiers()
         {
+            if (agent == null)
+            {
+                return;
+            }
+
             float multiplier = dayNight != null && dayNight.IsNight ? nightMoveSpeedMultiplier : 1f;
             agent.speed = baseMoveSpeed * multiplier;
         }
@@ -568,10 +594,119 @@ namespace LiteRealm.AI
             {
                 EnemyId = enemyId,
                 EnemyObject = gameObject,
-                Killer = null
+                Killer = lastDamageInstigator
             });
 
             ZombieDied?.Invoke(this);
+        }
+
+        private void OnDamaged(DamageInfo damageInfo)
+        {
+            if (damageInfo.Instigator != null)
+            {
+                lastDamageInstigator = damageInfo.Instigator;
+                lastKnownTargetPosition = damageInfo.Instigator.transform.position;
+                loseSightTimer = 0f;
+
+                if (target == null && damageInfo.Instigator.GetComponent<PlayerStats>() != null)
+                {
+                    target = damageInfo.Instigator.transform;
+                    ResolveTargetDamageable();
+                }
+            }
+
+            if (damageInfo.HitPoint != Vector3.zero)
+            {
+                heardPosition = damageInfo.HitPoint;
+            }
+        }
+
+        private void FinalizeAiTick()
+        {
+            TickStuckRecovery();
+            UpdatePresentationMovement();
+        }
+
+        private bool CanUseAgent()
+        {
+            return agent != null && agent.enabled && agent.isOnNavMesh;
+        }
+
+        private void SetAgentStopped(bool stopped)
+        {
+            if (!CanUseAgent())
+            {
+                return;
+            }
+
+            agent.isStopped = stopped;
+        }
+
+        private void SetAgentDestination(Vector3 destination, bool force = false)
+        {
+            if (!CanUseAgent())
+            {
+                return;
+            }
+
+            if (!force
+                && Time.time < nextAllowedPathUpdateTime
+                && Vector3.Distance(lastDestination, destination) < destinationUpdateThreshold)
+            {
+                return;
+            }
+
+            Vector3 sampledDestination = destination;
+            if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            {
+                sampledDestination = hit.position;
+            }
+
+            if (agent.SetDestination(sampledDestination))
+            {
+                lastDestination = sampledDestination;
+                nextAllowedPathUpdateTime = Time.time + Mathf.Max(0.02f, repathInterval);
+            }
+        }
+
+        private void TickStuckRecovery()
+        {
+            if (!CanUseAgent() || agent.isStopped || attackInProgress || !agent.hasPath || agent.pathPending)
+            {
+                lastStuckCheckPosition = transform.position;
+                stuckSamples = 0;
+                return;
+            }
+
+            if (Time.time < nextStuckCheckTime)
+            {
+                return;
+            }
+
+            nextStuckCheckTime = Time.time + Mathf.Max(0.2f, stuckCheckInterval);
+            float movedDistance = Vector3.Distance(transform.position, lastStuckCheckPosition);
+            lastStuckCheckPosition = transform.position;
+
+            if (agent.remainingDistance <= 1.2f || movedDistance >= stuckDistanceThreshold)
+            {
+                stuckSamples = 0;
+                return;
+            }
+
+            stuckSamples++;
+            if (stuckSamples < 2)
+            {
+                return;
+            }
+
+            stuckSamples = 0;
+            Vector2 randomOffset = UnityEngine.Random.insideUnitCircle * Mathf.Max(0.5f, stuckRecoveryRadius);
+            Vector3 recoveryTarget = lastKnownTargetPosition + new Vector3(randomOffset.x, 0f, randomOffset.y);
+            if (NavMesh.SamplePosition(recoveryTarget, out NavMeshHit hit, Mathf.Max(1f, stuckRecoveryRadius), NavMesh.AllAreas))
+            {
+                agent.ResetPath();
+                SetAgentDestination(hit.position, true);
+            }
         }
     }
 }

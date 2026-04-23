@@ -231,6 +231,7 @@ namespace LiteRealm.EditorTools
             Button backButton = CreateButton(settingsPanel.transform, "BackButton", "Back", 0.06f);
 
             MainMenuController menuController = canvasRoot.AddComponent<MainMenuController>();
+            CharacterCreationController characterCreationController = canvasRoot.AddComponent<CharacterCreationController>();
             SettingsMenuController settingsController = settingsPanel.AddComponent<SettingsMenuController>();
 
             SerializedObject menuSo = new SerializedObject(menuController);
@@ -250,6 +251,7 @@ namespace LiteRealm.EditorTools
             SetRef(menuSo, "lanStatusText", lanSubtitle);
             SetRef(menuSo, "settingsPanel", settingsPanel);
             SetRef(menuSo, "settingsController", settingsController);
+            SetRef(menuSo, "characterCreationController", characterCreationController);
             menuSo.ApplyModifiedPropertiesWithoutUndo();
 
             SerializedObject settingsSo = new SerializedObject(settingsController);

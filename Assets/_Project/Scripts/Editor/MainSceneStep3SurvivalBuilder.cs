@@ -2,6 +2,7 @@
 using LiteRealm.AI;
 using LiteRealm.Combat;
 using LiteRealm.Core;
+using LiteRealm.Inventory;
 using LiteRealm.Player;
 using LiteRealm.UI;
 using LiteRealm.World;
@@ -32,8 +33,11 @@ namespace LiteRealm.EditorTools
             EnsureReticle(canvasRoot);
             EnsurePauseMenu(canvasRoot);
             EnsureDayNight(appRoot, scene);
+            EnsureAmbientTension(appRoot, scene);
+            EnsureCombatFeedback(canvasRoot, scene);
             EnsureSurvivalHud(canvasRoot, scene);
             EnsureMapUi(canvasRoot, scene);
+            EnsureInventoryUi(canvasRoot, scene);
             EnsureInteractionPrompt(canvasRoot, scene);
             EnsureGameOverPanel(canvasRoot, scene);
             EnsureSpawnerNightScaling(worldRoot, appRoot);
@@ -142,6 +146,33 @@ namespace LiteRealm.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        private static void EnsureAmbientTension(GameObject appRoot, Scene scene)
+        {
+            GameObject ambientGo = GetOrCreateChild(appRoot.transform, "AmbientTensionAudio");
+            AmbientTensionAudioController ambient = GetOrAddComponent<AmbientTensionAudioController>(ambientGo);
+            GameObject player = FindPlayer(scene);
+
+            SerializedObject so = new SerializedObject(ambient);
+            SetObject(so, "dayNight", FindInScene<DayNightCycleManager>(scene));
+            SetObject(so, "playerStats", player != null ? player.GetComponent<PlayerStats>() : null);
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void EnsureCombatFeedback(GameObject canvasRoot, Scene scene)
+        {
+            CombatFeedbackUIController feedback = GetOrAddComponent<CombatFeedbackUIController>(canvasRoot);
+            GameObject player = FindPlayer(scene);
+            GameEventHub hub = FindInScene<GameEventHub>(scene);
+
+            SerializedObject so = new SerializedObject(feedback);
+            SetObject(so, "canvas", canvasRoot.GetComponent<Canvas>());
+            SetObject(so, "playerStats", player != null ? player.GetComponent<PlayerStats>() : null);
+            SetObject(so, "weaponManager", player != null ? player.GetComponent<WeaponManager>() : null);
+            SetObject(so, "eventHub", hub);
+            SetBool(so, "buildRuntimeCrosshair", false);
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         public static MapUIController EnsureMapUi(GameObject canvasRoot, Scene scene)
         {
             MapUIController map = GetOrAddComponent<MapUIController>(canvasRoot);
@@ -153,6 +184,20 @@ namespace LiteRealm.EditorTools
             SetObject(so, "input", input);
             so.ApplyModifiedPropertiesWithoutUndo();
             return map;
+        }
+
+        public static InventoryUIController EnsureInventoryUi(GameObject canvasRoot, Scene scene)
+        {
+            InventoryUIController inventoryUi = GetOrAddComponent<InventoryUIController>(canvasRoot);
+            GameObject player = FindPlayer(scene);
+            ExplorationInput input = player != null ? player.GetComponent<ExplorationInput>() : null;
+            InventoryComponent inventory = player != null ? player.GetComponent<InventoryComponent>() : null;
+
+            SerializedObject so = new SerializedObject(inventoryUi);
+            SetObject(so, "inventory", inventory);
+            SetObject(so, "input", input);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return inventoryUi;
         }
 
         public static void EnsureGameOverPanel(GameObject canvasRoot, Scene scene)
@@ -735,6 +780,15 @@ namespace LiteRealm.EditorTools
             if (property != null)
             {
                 property.objectReferenceValue = value;
+            }
+        }
+
+        private static void SetBool(SerializedObject so, string propertyName, bool value)
+        {
+            SerializedProperty property = so.FindProperty(propertyName);
+            if (property != null)
+            {
+                property.boolValue = value;
             }
         }
     }

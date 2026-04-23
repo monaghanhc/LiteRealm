@@ -19,6 +19,13 @@ namespace LiteRealm.AI
         [SerializeField] [Min(0f)] private float respawnInterval = 4f;
         [SerializeField] [Min(0)] private int initialSpawnCount = 4;
 
+        [Header("Pacing")]
+        [SerializeField] [Min(0f)] private float respawnIntervalJitter = 1.25f;
+        [SerializeField] [Min(0f)] private float minSpawnDistanceFromTarget = 12f;
+        [SerializeField] [Min(0f)] private float spawnPositionJitter = 2.25f;
+        [SerializeField] [Min(1)] private int maxSpawnPointAttempts = 8;
+        [SerializeField] [Min(0)] private int nightInitialSpawnBonus = 2;
+
         [Header("References")]
         [SerializeField] private Transform target;
         [SerializeField] private GameEventHub eventHub;
@@ -72,7 +79,7 @@ namespace LiteRealm.AI
             }
 
             SpawnZombie();
-            spawnTimer = respawnInterval;
+            spawnTimer = GetNextRespawnDelay();
         }
 
         public void SpawnZombie()
@@ -82,14 +89,9 @@ namespace LiteRealm.AI
                 return;
             }
 
-            Transform spawnPoint = GetNextSpawnPoint();
-            Vector3 spawnPosition = spawnPoint.position;
-            if (NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, 3f, NavMesh.AllAreas))
-            {
-                spawnPosition = hit.position;
-            }
+            TryGetSpawnPose(out Vector3 spawnPosition, out Quaternion spawnRotation);
 
-            ZombieAI zombie = Instantiate(zombiePrefab, spawnPosition, spawnPoint.rotation);
+            ZombieAI zombie = Instantiate(zombiePrefab, spawnPosition, spawnRotation);
             zombie.Initialize(target, eventHub, dayNight);
             zombie.ZombieDied += OnZombieDied;
             alive.Add(zombie);
@@ -105,11 +107,14 @@ namespace LiteRealm.AI
 
         private void SpawnInitial()
         {
-            int initial = Mathf.Max(0, initialSpawnCount);
+            int nightBonus = dayNight != null && dayNight.IsNight ? nightInitialSpawnBonus : 0;
+            int initial = Mathf.Min(GetCurrentMaxAlive(), Mathf.Max(0, initialSpawnCount + nightBonus));
             for (int i = 0; i < initial; i++)
             {
                 SpawnZombie();
             }
+
+            spawnTimer = GetNextRespawnDelay();
         }
 
         private Transform GetNextSpawnPoint()
@@ -121,6 +126,61 @@ namespace LiteRealm.AI
             }
 
             return transform;
+        }
+
+        private bool TryGetSpawnPose(out Vector3 spawnPosition, out Quaternion spawnRotation)
+        {
+            spawnPosition = transform.position;
+            spawnRotation = transform.rotation;
+
+            Transform fallbackPoint = null;
+            float fallbackDistance = float.MinValue;
+            int attempts = Mathf.Max(1, maxSpawnPointAttempts);
+
+            for (int i = 0; i < attempts; i++)
+            {
+                Transform spawnPoint = GetNextSpawnPoint();
+                if (spawnPoint == null)
+                {
+                    continue;
+                }
+
+                Vector2 jitter = Random.insideUnitCircle * Mathf.Max(0f, spawnPositionJitter);
+                Vector3 candidate = spawnPoint.position + new Vector3(jitter.x, 0f, jitter.y);
+                if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                {
+                    candidate = hit.position;
+                }
+
+                float distanceToTarget = target != null ? Vector3.Distance(candidate, target.position) : float.MaxValue;
+                if (distanceToTarget > fallbackDistance)
+                {
+                    fallbackDistance = distanceToTarget;
+                    fallbackPoint = spawnPoint;
+                    spawnPosition = candidate;
+                    spawnRotation = spawnPoint.rotation;
+                }
+
+                if (target == null || distanceToTarget >= minSpawnDistanceFromTarget)
+                {
+                    return true;
+                }
+            }
+
+            if (fallbackPoint != null)
+            {
+                return false;
+            }
+
+            Transform defaultPoint = GetNextSpawnPoint();
+            spawnPosition = defaultPoint.position;
+            spawnRotation = defaultPoint.rotation;
+            if (NavMesh.SamplePosition(spawnPosition, out NavMeshHit defaultHit, 4f, NavMesh.AllAreas))
+            {
+                spawnPosition = defaultHit.position;
+            }
+
+            return false;
         }
 
         private void OnZombieDied(ZombieAI zombie)
@@ -153,6 +213,18 @@ namespace LiteRealm.AI
             int multiplied = Mathf.RoundToInt(maxAliveDay * Mathf.Max(1f, nightSpawnMultiplier));
             int nightCap = Mathf.Max(maxAliveNight, multiplied);
             return Mathf.Max(1, nightCap);
+        }
+
+        private float GetNextRespawnDelay()
+        {
+            float baseDelay = Mathf.Max(0f, respawnInterval);
+            float jitter = Mathf.Max(0f, respawnIntervalJitter);
+            if (jitter <= 0f)
+            {
+                return baseDelay;
+            }
+
+            return Mathf.Max(0.1f, baseDelay + Random.Range(-jitter, jitter));
         }
     }
 }

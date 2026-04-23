@@ -37,6 +37,8 @@ namespace LiteRealm.EditorTools
 
             Terrain terrain = CreateTerrain();
             GameObject app = new GameObject("__App");
+            app.AddComponent<ImmersiveVisualQualityController>();
+            app.AddComponent<PhysicsRealismController>();
             GameObject world = new GameObject("World");
 
             CreateWater(world.transform);
@@ -134,8 +136,13 @@ namespace LiteRealm.EditorTools
             terrainGo.name = "Terrain";
             Terrain terrain = terrainGo.GetComponent<Terrain>();
             terrain.drawInstanced = true;
-            terrain.treeDistance = 300f;
-            terrain.basemapDistance = 900f;
+            terrain.heightmapPixelError = 3f;
+            terrain.detailObjectDistance = 92f;
+            terrain.detailObjectDensity = 0.82f;
+            terrain.treeDistance = 430f;
+            terrain.treeBillboardDistance = 96f;
+            terrain.treeCrossFadeLength = 24f;
+            terrain.basemapDistance = 1200f;
             return terrain;
         }
 
@@ -326,6 +333,7 @@ namespace LiteRealm.EditorTools
             player.AddComponent<PlayerDamageAudioController>();
             ExplorationInput input = player.AddComponent<ExplorationInput>();
             PlayerController playerController = player.AddComponent<PlayerController>();
+            player.AddComponent<PlayerCharacterVisualController>();
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
 
             AudioSource footstepSource = player.AddComponent<AudioSource>();
@@ -359,9 +367,12 @@ namespace LiteRealm.EditorTools
             GameObject camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             Camera cam = camGo.AddComponent<Camera>();
-            cam.fieldOfView = 72f;
+            cam.fieldOfView = 68f;
             cam.nearClipPlane = 0.03f;
             cam.farClipPlane = 1000f;
+            cam.allowHDR = true;
+            cam.allowMSAA = true;
+            cam.useOcclusionCulling = true;
             camGo.AddComponent<AudioListener>();
 
             CameraController controller = camGo.AddComponent<CameraController>();
@@ -402,13 +413,13 @@ namespace LiteRealm.EditorTools
             GameObject lightGo = new GameObject("Directional Light");
             Light light = lightGo.AddComponent<Light>();
             light.type = LightType.Directional;
-            light.intensity = 1.2f;
-            light.color = new Color(1f, 0.98f, 0.95f);
-            light.shadowStrength = 1f;
-            light.shadowBias = 0.05f;
-            light.shadowNormalBias = 0.4f;
+            light.intensity = 1.42f;
+            light.color = new Color(1f, 0.91f, 0.76f);
+            light.shadowStrength = 0.92f;
+            light.shadowBias = 0.035f;
+            light.shadowNormalBias = 0.28f;
             light.shadows = LightShadows.Soft;
-            lightGo.transform.rotation = Quaternion.Euler(45f, -26f, 0f);
+            lightGo.transform.rotation = Quaternion.Euler(42f, -31f, 0f);
             ProceduralArtKit.ApplySkyRenderSettings(light);
         }
 
@@ -592,6 +603,16 @@ namespace LiteRealm.EditorTools
         {
             Material m = new Material(Shader.Find("Standard"));
             m.color = color;
+            m.enableInstancing = true;
+            if (m.HasProperty("_Glossiness"))
+            {
+                m.SetFloat("_Glossiness", 0.28f);
+            }
+
+            if (m.HasProperty("_Metallic"))
+            {
+                m.SetFloat("_Metallic", 0f);
+            }
             return m;
         }
 

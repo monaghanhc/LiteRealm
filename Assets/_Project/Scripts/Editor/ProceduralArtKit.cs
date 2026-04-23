@@ -64,22 +64,22 @@ namespace LiteRealm.EditorTools
 
             Texture2D grass = EnsureNoiseTexture(
                 GrassTexturePath,
-                new Color(0.13f, 0.25f, 0.10f),
-                new Color(0.33f, 0.50f, 0.21f),
+                new Color(0.10f, 0.21f, 0.09f),
+                new Color(0.30f, 0.46f, 0.20f),
                 128,
                 11,
                 0.075f);
             Texture2D dirt = EnsureNoiseTexture(
                 DirtTexturePath,
-                new Color(0.24f, 0.17f, 0.10f),
-                new Color(0.48f, 0.36f, 0.22f),
+                new Color(0.19f, 0.14f, 0.095f),
+                new Color(0.42f, 0.32f, 0.21f),
                 128,
                 29,
                 0.09f);
             Texture2D rock = EnsureNoiseTexture(
                 RockTexturePath,
-                new Color(0.27f, 0.28f, 0.27f),
-                new Color(0.62f, 0.62f, 0.58f),
+                new Color(0.24f, 0.25f, 0.24f),
+                new Color(0.58f, 0.58f, 0.54f),
                 128,
                 47,
                 0.11f);
@@ -102,6 +102,10 @@ namespace LiteRealm.EditorTools
             data.terrainLayers = EnsureTerrainLayers();
             ApplyTerrainAlphamaps(data);
             ApplyTerrainDetails(data);
+            data.wavingGrassStrength = 0.32f;
+            data.wavingGrassAmount = 0.42f;
+            data.wavingGrassSpeed = 0.36f;
+            data.wavingGrassTint = new Color(0.62f, 0.72f, 0.46f, 1f);
             EditorUtility.SetDirty(data);
         }
 
@@ -158,16 +162,16 @@ namespace LiteRealm.EditorTools
             {
                 material.shader = shader;
                 SetFloat(material, "_SunDisk", 2f);
-                SetFloat(material, "_SunSize", 0.035f);
-                SetFloat(material, "_SunSizeConvergence", 5f);
-                SetFloat(material, "_AtmosphereThickness", 1.18f);
-                SetColor(material, "_SkyTint", new Color(0.50f, 0.68f, 0.93f));
-                SetColor(material, "_GroundColor", new Color(0.35f, 0.38f, 0.42f));
-                SetFloat(material, "_Exposure", 1.18f);
+                SetFloat(material, "_SunSize", 0.032f);
+                SetFloat(material, "_SunSizeConvergence", 5.5f);
+                SetFloat(material, "_AtmosphereThickness", 1.28f);
+                SetColor(material, "_SkyTint", new Color(0.48f, 0.65f, 0.90f));
+                SetColor(material, "_GroundColor", new Color(0.31f, 0.34f, 0.36f));
+                SetFloat(material, "_Exposure", 1.12f);
             }
             else
             {
-                material.color = new Color(0.50f, 0.68f, 0.93f);
+                material.color = new Color(0.48f, 0.65f, 0.90f);
             }
 
             EditorUtility.SetDirty(material);
@@ -179,13 +183,15 @@ namespace LiteRealm.EditorTools
             RenderSettings.skybox = EnsureSkyboxMaterial();
             RenderSettings.sun = sunLight;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.72f, 0.82f, 0.95f);
-            RenderSettings.ambientEquatorColor = new Color(0.49f, 0.57f, 0.53f);
-            RenderSettings.ambientGroundColor = new Color(0.19f, 0.17f, 0.14f);
+            RenderSettings.ambientSkyColor = new Color(0.58f, 0.72f, 0.92f);
+            RenderSettings.ambientEquatorColor = new Color(0.34f, 0.43f, 0.39f);
+            RenderSettings.ambientGroundColor = new Color(0.10f, 0.095f, 0.085f);
+            RenderSettings.ambientIntensity = 0.95f;
+            RenderSettings.reflectionIntensity = 0.68f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.66f, 0.75f, 0.84f);
-            RenderSettings.fogDensity = 0.0019f;
+            RenderSettings.fogColor = new Color(0.50f, 0.60f, 0.67f);
+            RenderSettings.fogDensity = 0.0021f;
         }
 
         public static void EnsureCloudBank(Transform parent)
@@ -535,9 +541,13 @@ namespace LiteRealm.EditorTools
             }
 
             material.color = color;
+            material.enableInstancing = true;
             SetColor(material, "_Color", color);
             SetFloat(material, "_Glossiness", smoothness);
             SetFloat(material, "_Metallic", metallic);
+            SetFloat(material, "_SpecularHighlights", 1f);
+            SetFloat(material, "_GlossyReflections", 1f);
+            SetColor(material, "_SpecColor", Color.Lerp(Color.black, Color.white, Mathf.Clamp01(smoothness * 0.35f)));
 
             if (transparent)
             {
@@ -657,7 +667,7 @@ namespace LiteRealm.EditorTools
             layer.diffuseTexture = texture;
             layer.tileSize = tileSize;
             layer.smoothness = smoothness;
-            layer.specular = Color.black;
+            layer.specular = new Color(0.055f, 0.055f, 0.052f);
             EditorUtility.SetDirty(layer);
             return layer;
         }

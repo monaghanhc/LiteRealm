@@ -7,11 +7,26 @@ namespace LiteRealm.Player
     public class PlayerController : MonoBehaviour
     {
         [Header("Movement")]
-        [SerializeField] private float walkSpeed = 4.5f;
-        [SerializeField] private float sprintSpeed = 7.5f;
-        [SerializeField] private float crouchSpeed = 2.5f;
-        [SerializeField] private float jumpHeight = 1.2f;
-        [SerializeField] private float gravity = -20f;
+        [SerializeField] private float walkSpeed = 4.75f;
+        [SerializeField] private float sprintSpeed = 7.75f;
+        [SerializeField] private float crouchSpeed = 2.65f;
+        [SerializeField] private float jumpHeight = 1.22f;
+        [SerializeField] private float gravity = -23f;
+
+        [Header("Grounded Feel")]
+        [SerializeField] private float groundAcceleration = 46f;
+        [SerializeField] private float groundDeceleration = 58f;
+        [SerializeField] private float airAcceleration = 12f;
+        [SerializeField] private float directionChangeAccelerationMultiplier = 1.35f;
+        [SerializeField] private float groundedStickForce = -5.5f;
+        [SerializeField] private float terminalVelocity = -55f;
+        [SerializeField] [Range(0f, 1f)] private float landingDamping = 0.26f;
+
+        [Header("Controller Tuning")]
+        [SerializeField] private float controllerRadius = 0.35f;
+        [SerializeField] private float slopeLimit = 48f;
+        [SerializeField] private float stepOffset = 0.40f;
+        [SerializeField] private float skinWidth = 0.06f;
 
         [Header("Stamina")]
         [SerializeField] private float sprintStaminaCostPerSecond = 18f;
@@ -30,8 +45,8 @@ namespace LiteRealm.Player
         [Header("Audio")]
         [SerializeField] private AudioSource footstepAudio;
         [SerializeField] private AudioClip[] footstepClips;
-        [SerializeField] private float walkStepInterval = 0.45f;
-        [SerializeField] private float sprintStepInterval = 0.3f;
+        [SerializeField] private float walkStepInterval = 0.43f;
+        [SerializeField] private float sprintStepInterval = 0.29f;
         [SerializeField] private float crouchStepInterval = 0.65f;
 
         [Header("References")]
@@ -39,13 +54,17 @@ namespace LiteRealm.Player
         [SerializeField] private ExplorationInput explorationInput;
 
         private CharacterController characterController;
+        private Vector3 horizontalVelocity;
         private Vector3 verticalVelocity;
         private bool crouched;
+        private bool wasGrounded;
         private float footstepTimer;
         private AudioClip[] _runtimeFootstepClips;
 
         public bool IsSprinting { get; private set; }
         public bool IsCrouched => crouched;
+        public bool IsGrounded => characterController != null && characterController.isGrounded;
+        public float PlanarSpeed => new Vector3(Velocity.x, 0f, Velocity.z).magnitude;
         public Vector3 Velocity => characterController != null ? characterController.velocity : Vector3.zero;
 
         private void Awake()
@@ -64,7 +83,13 @@ namespace LiteRealm.Player
             if (characterController != null)
             {
                 characterController.height = standingHeight;
+                characterController.radius = controllerRadius;
                 characterController.center = new Vector3(0f, standingHeight * 0.5f, 0f);
+                characterController.slopeLimit = slopeLimit;
+                characterController.stepOffset = stepOffset;
+                characterController.skinWidth = skinWidth;
+                characterController.minMoveDistance = 0f;
+                characterController.enableOverlapRecovery = true;
             }
 
             if (footstepAudio == null)
@@ -125,7 +150,7 @@ namespace LiteRealm.Player
             bool grounded = characterController.isGrounded;
             if (grounded && verticalVelocity.y < 0f)
             {
-                verticalVelocity.y = -2f;
+                verticalVelocity.y = wasGrounded ? groundedStickForce : groundedStickForce * landingDamping;
             }
 
             Vector2 moveInput = ReadMoveInput();
@@ -151,7 +176,27 @@ namespace LiteRealm.Player
                 }
             }
 
-            characterController.Move(moveDirection * speed * deltaTime);
+            Vector3 desiredHorizontalVelocity = moveDirection * speed;
+            float acceleration = hasMovementInput
+                ? (grounded ? groundAcceleration : airAcceleration)
+                : groundDeceleration;
+
+            if (hasMovementInput && horizontalVelocity.sqrMagnitude > 0.1f)
+            {
+                float directionDot = Vector3.Dot(horizontalVelocity.normalized, desiredHorizontalVelocity.normalized);
+                if (directionDot < -0.15f)
+                {
+                    acceleration *= directionChangeAccelerationMultiplier;
+                }
+            }
+
+            horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, desiredHorizontalVelocity, acceleration * deltaTime);
+            if (grounded && !hasMovementInput && horizontalVelocity.sqrMagnitude < 0.01f)
+            {
+                horizontalVelocity = Vector3.zero;
+            }
+
+            characterController.Move(horizontalVelocity * deltaTime);
 
             if (ReadJumpPressedThisFrame() && grounded && !crouched)
             {
@@ -159,11 +204,13 @@ namespace LiteRealm.Player
             }
 
             verticalVelocity.y += gravity * deltaTime;
+            verticalVelocity.y = Mathf.Max(verticalVelocity.y, terminalVelocity);
             characterController.Move(Vector3.up * verticalVelocity.y * deltaTime);
 
             float targetHeight = crouched ? crouchingHeight : standingHeight;
             characterController.height = Mathf.Lerp(characterController.height, targetHeight, crouchTransitionSpeed * deltaTime);
             characterController.center = new Vector3(0f, characterController.height * 0.5f, 0f);
+            wasGrounded = grounded;
         }
 
         private void HandleCrouchInput()

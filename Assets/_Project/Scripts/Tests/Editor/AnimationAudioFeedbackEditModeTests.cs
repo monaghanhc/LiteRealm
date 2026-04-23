@@ -25,6 +25,7 @@ namespace LiteRealm.Tests.Editor
                 Assert.AreEqual(1, damageEvents);
                 Assert.Less(stats.CurrentHealth, 100f);
                 Assert.IsNotNull(player.GetComponent<PlayerDamageAudioController>());
+                Assert.IsNotNull(player.GetComponent<PlayerImpactFeedbackController>());
             }
             finally
             {
@@ -81,6 +82,82 @@ namespace LiteRealm.Tests.Editor
             finally
             {
                 Object.DestroyImmediate(weaponObject);
+            }
+        }
+
+        [Test]
+        public void GameEventHub_RaisesDamageDealtEvent()
+        {
+            GameObject hubObject = new GameObject("Hub");
+            GameObject instigator = new GameObject("Player");
+            GameObject target = new GameObject("Zombie");
+            try
+            {
+                GameEventHub hub = hubObject.AddComponent<GameEventHub>();
+                DamageDealtEvent received = new DamageDealtEvent();
+                int receivedCount = 0;
+                hub.DamageDealt += data =>
+                {
+                    received = data;
+                    receivedCount++;
+                };
+
+                hub.RaiseDamageDealt(new DamageDealtEvent
+                {
+                    SourceId = "weapon.rifle",
+                    Amount = 22f,
+                    Position = Vector3.one,
+                    Normal = Vector3.up,
+                    Instigator = instigator,
+                    Target = target,
+                    Killed = true
+                });
+
+                Assert.AreEqual(1, receivedCount);
+                Assert.AreEqual("weapon.rifle", received.SourceId);
+                Assert.AreEqual(22f, received.Amount);
+                Assert.AreSame(instigator, received.Instigator);
+                Assert.AreSame(target, received.Target);
+                Assert.IsTrue(received.Killed);
+            }
+            finally
+            {
+                Object.DestroyImmediate(hubObject);
+                Object.DestroyImmediate(instigator);
+                Object.DestroyImmediate(target);
+            }
+        }
+
+        [Test]
+        public void WeaponManager_ForwardsEmptyMagazineEventFromActiveWeapon()
+        {
+            GameObject player = new GameObject("Player");
+            GameObject weaponObject = new GameObject("Rifle");
+            try
+            {
+                weaponObject.transform.SetParent(player.transform);
+                HitscanRifle rifle = weaponObject.AddComponent<HitscanRifle>();
+                InvokeLifecycle(rifle, "Awake");
+
+                WeaponManager manager = player.AddComponent<WeaponManager>();
+                InvokeLifecycle(manager, "Awake");
+
+                int emptyEvents = 0;
+                manager.EmptyMagazineTriggered += weapon =>
+                {
+                    Assert.AreSame(rifle, weapon);
+                    emptyEvents++;
+                };
+
+                rifle.ForceSetAmmo(0);
+                bool fired = manager.TryFireActiveWeapon();
+
+                Assert.IsFalse(fired);
+                Assert.AreEqual(1, emptyEvents);
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
             }
         }
 

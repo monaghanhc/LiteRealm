@@ -30,6 +30,7 @@ namespace LiteRealm.UI
         [Header("Settings")]
         [SerializeField] private GameObject settingsPanel;
         [SerializeField] private SettingsMenuController settingsController;
+        [SerializeField] private CharacterCreationController characterCreationController;
 
         [Header("Scene")]
         [SerializeField] private string gameplaySceneName = "Main";
@@ -168,6 +169,22 @@ namespace LiteRealm.UI
         }
 
         private void OnNewGameClicked()
+        {
+            if (characterCreationController == null)
+            {
+                characterCreationController = FindObjectOfType<CharacterCreationController>(true);
+            }
+
+            if (characterCreationController != null)
+            {
+                characterCreationController.OpenForNewGame(StartNewGame);
+                return;
+            }
+
+            StartNewGame();
+        }
+
+        private void StartNewGame()
         {
             LanSessionLauncher.ClearPendingSession();
             SaveSystem.ClearPendingResumeRequest();
@@ -355,6 +372,11 @@ namespace LiteRealm.UI
             if (settingsController == null && settingsPanel != null)
             {
                 settingsController = settingsPanel.GetComponent<SettingsMenuController>();
+            }
+
+            if (characterCreationController == null)
+            {
+                characterCreationController = FindObjectOfType<CharacterCreationController>(true);
             }
         }
 

@@ -9,6 +9,8 @@ namespace LiteRealm.Loot
     {
         [SerializeField] private ItemDefinition item;
         [SerializeField] [Min(1)] private int quantity = 1;
+        [SerializeField] [Min(0.2f)] private float interactionColliderRadius = 0.85f;
+        [SerializeField] private bool useTriggerCollider = true;
         [SerializeField] private bool spinInPlace = true;
         [SerializeField] private float spinSpeed = 50f;
 
@@ -17,7 +19,7 @@ namespace LiteRealm.Loot
 
         private void Awake()
         {
-            EnsureInteractionLayerAndTag();
+            EnsurePickupReady();
         }
 
         private void Update()
@@ -32,7 +34,7 @@ namespace LiteRealm.Loot
 
         public void Configure(ItemDefinition definition, int amount)
         {
-            EnsureInteractionLayerAndTag();
+            EnsurePickupReady();
             item = definition;
             quantity = Mathf.Max(1, amount);
         }
@@ -49,15 +51,20 @@ namespace LiteRealm.Loot
 
         public void Interact(PlayerInteractor interactor)
         {
+            TryCollect(interactor);
+        }
+
+        public bool TryCollect(PlayerInteractor interactor)
+        {
             if (interactor == null || interactor.Inventory == null || item == null || quantity <= 0)
             {
-                return;
+                return false;
             }
 
             int accepted = interactor.Inventory.AddItemAndReturnAccepted(item, quantity);
             if (accepted <= 0)
             {
-                return;
+                return false;
             }
 
             quantity -= accepted;
@@ -70,8 +77,16 @@ namespace LiteRealm.Loot
 
             if (quantity <= 0)
             {
-                Destroy(gameObject);
+                DestroyRuntime(gameObject);
             }
+
+            return true;
+        }
+
+        public void EnsurePickupReady()
+        {
+            EnsureInteractionLayerAndTag();
+            EnsureInteractionCollider();
         }
 
         private void EnsureInteractionLayerAndTag()
@@ -92,6 +107,35 @@ namespace LiteRealm.Loot
                 {
                     // Tag may not exist in project settings yet; safe to ignore.
                 }
+            }
+        }
+
+        private void EnsureInteractionCollider()
+        {
+            SphereCollider sphere = GetComponent<SphereCollider>();
+            if (sphere == null)
+            {
+                sphere = gameObject.AddComponent<SphereCollider>();
+            }
+
+            sphere.radius = Mathf.Max(sphere.radius, interactionColliderRadius);
+            sphere.isTrigger = useTriggerCollider;
+        }
+
+        private static void DestroyRuntime(Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
             }
         }
     }

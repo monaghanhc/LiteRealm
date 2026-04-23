@@ -12,6 +12,19 @@ namespace LiteRealm.Core
     }
 
     [Serializable]
+    public struct DamageDealtEvent
+    {
+        public string SourceId;
+        public float Amount;
+        public Vector3 Position;
+        public Vector3 Normal;
+        public GameObject Target;
+        public GameObject Instigator;
+        public bool Killed;
+        public bool IsCritical;
+    }
+
+    [Serializable]
     public struct EnemyKilledEvent
     {
         public string EnemyId;
@@ -47,6 +60,7 @@ namespace LiteRealm.Core
     public class GameEventHub : MonoBehaviour
     {
         public event Action<WeaponFiredEvent> WeaponFired;
+        public event Action<DamageDealtEvent> DamageDealt;
         public event Action<EnemyKilledEvent> EnemyKilled;
         public event Action<BossKilledEvent> BossKilled;
         public event Action<ItemCollectedEvent> ItemCollected;
@@ -57,6 +71,11 @@ namespace LiteRealm.Core
         public void RaiseWeaponFired(WeaponFiredEvent data)
         {
             WeaponFired?.Invoke(data);
+        }
+
+        public void RaiseDamageDealt(DamageDealtEvent data)
+        {
+            DamageDealt?.Invoke(data);
         }
 
         public void RaiseEnemyKilled(EnemyKilledEvent data)

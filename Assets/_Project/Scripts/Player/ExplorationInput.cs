@@ -18,6 +18,7 @@ namespace LiteRealm.Player
         [SerializeField] private KeyCode interactFallbackKey = KeyCode.E;
         [SerializeField] private KeyCode reloadFallbackKey = KeyCode.R;
         [SerializeField] private KeyCode mapFallbackKey = KeyCode.M;
+        [SerializeField] private KeyCode inventoryFallbackKey = KeyCode.I;
         [SerializeField] private KeyCode fireFallbackKey = KeyCode.Mouse0;
         [SerializeField] private KeyCode aimFallbackKey = KeyCode.Mouse1;
 
@@ -39,6 +40,7 @@ namespace LiteRealm.Player
         private InputAction fireAction;
         private InputAction reloadAction;
         private InputAction mapAction;
+        private InputAction inventoryAction;
         private InputAction aimAction;
 #endif
 
@@ -201,6 +203,17 @@ namespace LiteRealm.Player
             return Input.GetKeyDown(mapFallbackKey);
         }
 
+        public bool InventoryPressedThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (usingInputSystem && inventoryAction != null && inventoryAction.WasPressedThisFrame())
+            {
+                return true;
+            }
+#endif
+            return Input.GetKeyDown(inventoryFallbackKey);
+        }
+
         public bool AimHeld()
         {
 #if ENABLE_INPUT_SYSTEM
@@ -210,6 +223,17 @@ namespace LiteRealm.Player
             }
 #endif
             return Input.GetKey(aimFallbackKey);
+        }
+
+        public bool AimPressedThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (usingInputSystem && aimAction != null && aimAction.WasPressedThisFrame())
+            {
+                return true;
+            }
+#endif
+            return Input.GetKeyDown(aimFallbackKey);
         }
 
         private void Initialize()
@@ -307,6 +331,10 @@ namespace LiteRealm.Player
             mapAction = actionMap.AddAction("Map", InputActionType.Button);
             mapAction.AddBinding("<Keyboard>/m");
             mapAction.AddBinding("<Gamepad>/select");
+
+            inventoryAction = actionMap.AddAction("Inventory", InputActionType.Button);
+            inventoryAction.AddBinding("<Keyboard>/i");
+            inventoryAction.AddBinding("<Gamepad>/dpad/down");
 
             aimAction = actionMap.AddAction("Aim", InputActionType.Button);
             aimAction.AddBinding("<Mouse>/rightButton");

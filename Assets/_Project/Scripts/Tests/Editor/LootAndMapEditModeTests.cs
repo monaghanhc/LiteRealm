@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Reflection;
 using LiteRealm.Inventory;
 using LiteRealm.Loot;
+using LiteRealm.Player;
 using LiteRealm.UI;
 using NUnit.Framework;
 using UnityEditor;
@@ -77,6 +79,124 @@ namespace LiteRealm.Tests.Editor
             }
         }
 
+        [Test]
+        public void DroppedPickup_CanCollectIntoInventory()
+        {
+            ItemDefinition item = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/ScriptableObjects/Items/Item_InfectedResidue.asset");
+            Assert.IsNotNull(item);
+
+            GameObject player = new GameObject("Player");
+            GameObject pickupObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            try
+            {
+                InventoryComponent inventory = player.AddComponent<InventoryComponent>();
+                InvokeLifecycle(inventory, "Awake");
+                PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
+                SerializedObject interactorSo = new SerializedObject(interactor);
+                SetObject(interactorSo, "inventory", inventory);
+                interactorSo.ApplyModifiedPropertiesWithoutUndo();
+
+                WorldItemPickup pickup = pickupObject.AddComponent<WorldItemPickup>();
+                pickup.Configure(item, 2);
+
+                Assert.IsTrue(pickup.TryCollect(interactor));
+                Assert.AreEqual(2, inventory.GetItemCount(item.ItemId));
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+                if (pickupObject != null)
+                {
+                    Object.DestroyImmediate(pickupObject);
+                }
+            }
+        }
+
+        [Test]
+        public void PlayerInteractor_ProximityFallbackFindsNearbyPickup()
+        {
+            ItemDefinition item = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/ScriptableObjects/Items/Item_InfectedResidue.asset");
+            Assert.IsNotNull(item);
+
+            GameObject player = new GameObject("Player");
+            GameObject pickupObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            try
+            {
+                InventoryComponent inventory = player.AddComponent<InventoryComponent>();
+                InvokeLifecycle(inventory, "Awake");
+                PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
+
+                SerializedObject interactorSo = new SerializedObject(interactor);
+                SetObject(interactorSo, "inventory", inventory);
+                int interactableLayer = LayerMask.NameToLayer("Interactable");
+                Assert.GreaterOrEqual(interactableLayer, 0, "Interactable layer is missing.");
+                SetLayerMask(interactorSo, "interactionMask", 1 << interactableLayer);
+                interactorSo.ApplyModifiedPropertiesWithoutUndo();
+
+                pickupObject.transform.position = new Vector3(1f, 0f, 0f);
+                WorldItemPickup pickup = pickupObject.AddComponent<WorldItemPickup>();
+                pickup.Configure(item, 1);
+                Physics.SyncTransforms();
+
+                InvokeLifecycle(interactor, "Awake");
+                InvokeLifecycle(interactor, "FindInteractable");
+
+                Assert.AreSame(pickup, interactor.CurrentInteractable);
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+                Object.DestroyImmediate(pickupObject);
+            }
+        }
+
+        [Test]
+        public void InventoryUi_BuildsReadableSummary()
+        {
+            ItemDefinition item = AssetDatabase.LoadAssetAtPath<ItemDefinition>("Assets/_Project/ScriptableObjects/Items/Item_InfectedResidue.asset");
+            Assert.IsNotNull(item);
+
+            GameObject player = new GameObject("InventoryPlayer");
+            GameObject canvasObject = new GameObject("Canvas");
+            try
+            {
+                InventoryComponent inventory = player.AddComponent<InventoryComponent>();
+                InvokeLifecycle(inventory, "Awake");
+                inventory.AddItemAndReturnAccepted(item, 3);
+
+                canvasObject.AddComponent<Canvas>();
+                InventoryUIController ui = canvasObject.AddComponent<InventoryUIController>();
+                ui.Bind(inventory, null);
+
+                string summary = ui.BuildInventorySummary();
+                StringAssert.Contains("Infected Residue x3", summary);
+            }
+            finally
+            {
+                Object.DestroyImmediate(player);
+                Object.DestroyImmediate(canvasObject);
+            }
+        }
+
+        [Test]
+        public void CharacterCustomization_ClampsInvalidIndexes()
+        {
+            CharacterCustomizationData data = new CharacterCustomizationData
+            {
+                SkinToneIndex = 99,
+                HairStyleIndex = -4,
+                HairColorIndex = 99,
+                OutfitColorIndex = -2
+            };
+
+            CharacterCustomizationData clamped = CharacterCustomizationState.Clamp(data);
+
+            Assert.That(clamped.SkinToneIndex, Is.InRange(0, CharacterCustomizationState.SkinTones.Length - 1));
+            Assert.That(clamped.HairStyleIndex, Is.InRange(0, CharacterCustomizationState.HairStyleNames.Length - 1));
+            Assert.That(clamped.HairColorIndex, Is.InRange(0, CharacterCustomizationState.HairColors.Length - 1));
+            Assert.That(clamped.OutfitColorIndex, Is.InRange(0, CharacterCustomizationState.OutfitColors.Length - 1));
+        }
+
         private static HashSet<string> RollItemIds(LootTable table, int rollCount)
         {
             List<LootRollResult> results = table.Roll(rollCount);
@@ -117,6 +237,34 @@ namespace LiteRealm.Tests.Editor
             }
 
             return itemIds;
+        }
+
+        private static void InvokeLifecycle(object target, string methodName)
+        {
+            MethodInfo method = null;
+            System.Type type = target.GetType();
+            while (type != null && method == null)
+            {
+                method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                type = type.BaseType;
+            }
+
+            Assert.IsNotNull(method, $"Missing method {methodName} on {target.GetType().Name}.");
+            method.Invoke(target, null);
+        }
+
+        private static void SetObject(SerializedObject so, string propertyName, Object value)
+        {
+            SerializedProperty property = so.FindProperty(propertyName);
+            Assert.IsNotNull(property, $"Missing serialized property {propertyName}.");
+            property.objectReferenceValue = value;
+        }
+
+        private static void SetLayerMask(SerializedObject so, string propertyName, int value)
+        {
+            SerializedProperty property = so.FindProperty(propertyName);
+            Assert.IsNotNull(property, $"Missing serialized property {propertyName}.");
+            property.intValue = value;
         }
     }
 }

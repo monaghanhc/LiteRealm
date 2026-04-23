@@ -25,6 +25,9 @@ namespace LiteRealm.Combat
         [SerializeField] private LayerMask hitMask = ~0;
 
         public event Action<WeaponBase> ActiveWeaponChanged;
+        public event Action<WeaponBase> WeaponFired;
+        public event Action<WeaponBase> ReloadStarted;
+        public event Action<WeaponBase> EmptyMagazineTriggered;
         public event Action<int, int> AmmoChanged;
 
         public WeaponBase ActiveWeapon { get; private set; }
@@ -66,6 +69,9 @@ namespace LiteRealm.Combat
                 }
 
                 weapon.AmmoChanged += OnWeaponAmmoChanged;
+                weapon.Fired += OnWeaponFired;
+                weapon.ReloadStarted += OnWeaponReloadStarted;
+                weapon.EmptyMagazineTriggered += OnWeaponEmptyMagazineTriggered;
                 weapon.gameObject.SetActive(false);
             }
 
@@ -83,6 +89,9 @@ namespace LiteRealm.Combat
                 }
 
                 weapon.AmmoChanged -= OnWeaponAmmoChanged;
+                weapon.Fired -= OnWeaponFired;
+                weapon.ReloadStarted -= OnWeaponReloadStarted;
+                weapon.EmptyMagazineTriggered -= OnWeaponEmptyMagazineTriggered;
             }
         }
 
@@ -251,6 +260,30 @@ namespace LiteRealm.Combat
             if (weapon == ActiveWeapon)
             {
                 AmmoChanged?.Invoke(weapon.CurrentAmmo, weapon.MagazineSize);
+            }
+        }
+
+        private void OnWeaponFired(WeaponBase weapon)
+        {
+            if (weapon == ActiveWeapon)
+            {
+                WeaponFired?.Invoke(weapon);
+            }
+        }
+
+        private void OnWeaponReloadStarted(WeaponBase weapon)
+        {
+            if (weapon == ActiveWeapon)
+            {
+                ReloadStarted?.Invoke(weapon);
+            }
+        }
+
+        private void OnWeaponEmptyMagazineTriggered(WeaponBase weapon)
+        {
+            if (weapon == ActiveWeapon)
+            {
+                EmptyMagazineTriggered?.Invoke(weapon);
             }
         }
 

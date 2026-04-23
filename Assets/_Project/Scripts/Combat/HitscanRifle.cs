@@ -25,13 +25,28 @@ namespace LiteRealm.Combat
             IDamageable damageable = FindDamageable(hit.collider);
             if (damageable != null)
             {
-                damageable.ApplyDamage(new DamageInfo(
+                bool wasDead = damageable.IsDead;
+                DamageInfo damageInfo = new DamageInfo(
                     Damage,
                     hit.point,
                     hit.normal,
                     shootDirection,
                     context.Instigator,
-                    WeaponId));
+                    WeaponId);
+
+                damageable.ApplyDamage(damageInfo);
+                bool killed = !wasDead && damageable.IsDead;
+                context.EventHub?.RaiseDamageDealt(new DamageDealtEvent
+                {
+                    SourceId = WeaponId,
+                    Amount = Damage,
+                    Position = hit.point,
+                    Normal = hit.normal,
+                    Target = damageable.DamageTransform != null ? damageable.DamageTransform.gameObject : hit.collider.gameObject,
+                    Instigator = context.Instigator,
+                    Killed = killed,
+                    IsCritical = damageInfo.IsCritical
+                });
                 SpawnBloodImpact(hit.point, hit.normal);
             }
             else
