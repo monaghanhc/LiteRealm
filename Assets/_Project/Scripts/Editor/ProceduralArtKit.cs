@@ -904,11 +904,59 @@ namespace LiteRealm.EditorTools
         private static float PathMask(float nx, float nz)
         {
             Vector2 p = new Vector2(nx, nz);
-            float a = SegmentMask(p, new Vector2(0.13f, 0.15f), new Vector2(0.16f, 0.22f));
-            float b = SegmentMask(p, new Vector2(0.16f, 0.22f), new Vector2(0.38f, 0.35f));
-            float c = SegmentMask(p, new Vector2(0.38f, 0.35f), new Vector2(0.60f, 0.48f));
-            float d = SegmentMask(p, new Vector2(0.60f, 0.48f), new Vector2(0.83f, 0.83f));
-            return Mathf.Clamp01(Mathf.Max(Mathf.Max(a, b), Mathf.Max(c, d)));
+            Vector2[] mainRoad =
+            {
+                new Vector2(0.117f, 0.147f),
+                new Vector2(0.197f, 0.203f),
+                new Vector2(0.317f, 0.263f),
+                new Vector2(0.467f, 0.342f),
+                new Vector2(0.620f, 0.360f),
+                new Vector2(0.730f, 0.297f),
+                new Vector2(0.892f, 0.257f)
+            };
+
+            Vector2[] bossRoad =
+            {
+                new Vector2(0.620f, 0.360f),
+                new Vector2(0.700f, 0.517f),
+                new Vector2(0.790f, 0.680f),
+                new Vector2(0.833f, 0.833f)
+            };
+
+            float mask = PolylineMask(p, mainRoad);
+            mask = Mathf.Max(mask, PolylineMask(p, bossRoad));
+            mask = Mathf.Max(mask, SegmentMask(p, new Vector2(0.197f, 0.203f), new Vector2(0.158f, 0.217f)));
+            mask = Mathf.Max(mask, SegmentMask(p, new Vector2(0.417f, 0.317f), new Vector2(0.383f, 0.350f)));
+
+            float[] cityX = { 0.692f, 0.758f, 0.825f, 0.892f };
+            float[] cityZ = { 0.170f, 0.230f, 0.293f, 0.357f, 0.397f };
+            for (int i = 0; i < cityX.Length; i++)
+            {
+                mask = Mathf.Max(mask, SegmentMask(p, new Vector2(cityX[i], 0.137f), new Vector2(cityX[i], 0.397f)));
+            }
+
+            for (int i = 0; i < cityZ.Length; i++)
+            {
+                mask = Mathf.Max(mask, SegmentMask(p, new Vector2(0.653f, cityZ[i]), new Vector2(0.943f, cityZ[i])));
+            }
+
+            return Mathf.Clamp01(mask);
+        }
+
+        private static float PolylineMask(Vector2 p, Vector2[] points)
+        {
+            if (points == null || points.Length < 2)
+            {
+                return 0f;
+            }
+
+            float mask = 0f;
+            for (int i = 0; i < points.Length - 1; i++)
+            {
+                mask = Mathf.Max(mask, SegmentMask(p, points[i], points[i + 1]));
+            }
+
+            return mask;
         }
 
         private static float SegmentMask(Vector2 p, Vector2 a, Vector2 b)

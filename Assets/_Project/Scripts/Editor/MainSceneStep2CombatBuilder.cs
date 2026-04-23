@@ -12,6 +12,7 @@ using LiteRealm.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 
 namespace LiteRealm.EditorTools
@@ -19,6 +20,7 @@ namespace LiteRealm.EditorTools
     public static class MainSceneStep2CombatBuilder
     {
         private const string ZombiePrefabPath = "Assets/_Project/Prefabs/Enemies/Zombie.prefab";
+        private const string CityBruteZombiePrefabPath = "Assets/_Project/Prefabs/Enemies/CityBruteZombie.prefab";
         private const string BossPrefabPath = "Assets/_Project/Prefabs/Enemies/Boss.prefab";
         private const string ProjectilePrefabPath = "Assets/_Project/Prefabs/Enemies/BossProjectile.prefab";
         private const string RiflePrefabPath = "Assets/_Project/Prefabs/Weapons/Rifle.prefab";
@@ -61,6 +63,7 @@ namespace LiteRealm.EditorTools
             ItemDefinition bossToken = GetOrCreateBossToken();
             GameObject projectilePrefab = GetOrCreateProjectilePrefab();
             GameObject zombiePrefab = GetOrCreateZombiePrefab();
+            GameObject cityBrutePrefab = GetOrCreateCityBruteZombiePrefab(zombiePrefab);
             GameObject bossPrefab = GetOrCreateBossPrefab(projectilePrefab, bossToken);
             GameObject bloodPrefab = GetOrCreateBloodImpactPrefab();
             GameObject riflePrefab = GetOrCreateRiflePrefab(bloodPrefab);
@@ -75,6 +78,7 @@ namespace LiteRealm.EditorTools
             ConfigurePlayer(scene, player, hub, riflePrefab);
             ConfigureSpawner(scene, world.transform, player, hub, dayNight, zombiePrefab);
             ConfigureEnemyPatrols(scene, world.transform, player, hub, dayNight, navBootstrap, zombiePrefab);
+            ConfigureCityDangerZone(scene, world.transform, player, hub, dayNight, navBootstrap, cityBrutePrefab, bossPrefab);
             ConfigureBoss(scene, app.transform, world.transform, player, hub, dayNight, bossPrefab);
 
             GameObject canvasRoot = GetOrCreateRoot(scene, "UI Canvas");
@@ -108,6 +112,7 @@ namespace LiteRealm.EditorTools
 
                 bool hasPrefabs = File.Exists(RiflePrefabPath)
                                   && File.Exists(ZombiePrefabPath)
+                                  && File.Exists(CityBruteZombiePrefabPath)
                                   && File.Exists(BossPrefabPath)
                                   && File.Exists(ProjectilePrefabPath);
 
@@ -133,6 +138,69 @@ namespace LiteRealm.EditorTools
         private static GameObject GetOrCreateZombiePrefab()
         {
             return ProceduralArtKit.UpgradeZombiePrefab(ZombiePrefabPath);
+        }
+
+        private static GameObject GetOrCreateCityBruteZombiePrefab(GameObject baseZombiePrefab)
+        {
+            if (baseZombiePrefab == null)
+            {
+                return null;
+            }
+
+            EnsureDirectory(Path.GetDirectoryName(CityBruteZombiePrefabPath));
+            bool existed = File.Exists(CityBruteZombiePrefabPath);
+            bool loadedPrefabContents = existed;
+            GameObject root = existed
+                ? PrefabUtility.LoadPrefabContents(CityBruteZombiePrefabPath)
+                : Object.Instantiate(baseZombiePrefab);
+
+            if (root == null)
+            {
+                return null;
+            }
+
+            root.name = "CityBruteZombie";
+            root.transform.localScale = new Vector3(1.16f, 1.14f, 1.16f);
+            SetEnemyLayerAndTag(root);
+
+            HealthComponent health = GetOrAdd<HealthComponent>(root);
+            SerializedObject healthSo = new SerializedObject(health);
+            SetFloat(healthSo, "maxHealth", 185f);
+            SetBool(healthSo, "destroyOnDeath", false);
+            SetBool(healthSo, "disableGameObjectOnDeath", false);
+            healthSo.ApplyModifiedPropertiesWithoutUndo();
+
+            ZombieAI zombie = GetOrAdd<ZombieAI>(root);
+            SerializedObject zombieSo = new SerializedObject(zombie);
+            SetString(zombieSo, "enemyId", "zombie.city.brute");
+            SetFloat(zombieSo, "baseMoveSpeed", 3.15f);
+            SetFloat(zombieSo, "sightRange", 38f);
+            SetFloat(zombieSo, "hearingRange", 24f);
+            SetFloat(zombieSo, "attackDamage", 18f);
+            SetFloat(zombieSo, "attackCooldown", 0.95f);
+            SetFloat(zombieSo, "nightMoveSpeedMultiplier", 1.35f);
+            SetFloat(zombieSo, "nightSenseMultiplier", 1.5f);
+            SetFloat(zombieSo, "nightDamageMultiplier", 1.32f);
+            zombieSo.ApplyModifiedPropertiesWithoutUndo();
+
+            NavMeshAgent agent = GetOrAdd<NavMeshAgent>(root);
+            agent.speed = 3.15f;
+            agent.acceleration = 10f;
+            agent.angularSpeed = 240f;
+            agent.stoppingDistance = 1.55f;
+            agent.radius = 0.48f;
+
+            PrefabUtility.SaveAsPrefabAsset(root, CityBruteZombiePrefabPath);
+            if (loadedPrefabContents)
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+            else
+            {
+                Object.DestroyImmediate(root);
+            }
+
+            return AssetDatabase.LoadAssetAtPath<GameObject>(CityBruteZombiePrefabPath);
         }
 
         private static GameObject GetOrCreateProjectilePrefab()
@@ -197,6 +265,8 @@ namespace LiteRealm.EditorTools
                     }
                 }
             }
+
+            MainSceneStep1Builder.ApplyExpandedWorldLayout(scene);
         }
 
         private static ItemDefinition GetOrCreateBossToken()
@@ -391,6 +461,137 @@ namespace LiteRealm.EditorTools
             }
         }
 
+        private static void ConfigureCityDangerZone(
+            Scene scene,
+            Transform world,
+            Transform player,
+            GameEventHub hub,
+            DayNightCycleManager dayNight,
+            RuntimeNavMeshBootstrap navBootstrap,
+            GameObject cityBrutePrefab,
+            GameObject bossPrefab)
+        {
+            Terrain terrain = Object.FindFirstObjectByType<Terrain>();
+
+            if (cityBrutePrefab != null)
+            {
+                GameObject spawnerGo = GetOrCreateChild(world, "ZombieSpawner_CityDistrict");
+                SpawnerZone spawner = GetOrAdd<SpawnerZone>(spawnerGo);
+                Vector3[] points =
+                {
+                    new Vector3(404f, 0f, 98f),
+                    new Vector3(450f, 0f, 106f),
+                    new Vector3(520f, 0f, 104f),
+                    new Vector3(562f, 0f, 142f),
+                    new Vector3(540f, 0f, 202f),
+                    new Vector3(486f, 0f, 226f),
+                    new Vector3(428f, 0f, 222f),
+                    new Vector3(396f, 0f, 178f),
+                    new Vector3(500f, 0f, 166f),
+                    new Vector3(458f, 0f, 176f)
+                };
+
+                List<Transform> spawnPoints = new List<Transform>();
+                for (int i = 0; i < points.Length; i++)
+                {
+                    GameObject point = GetOrCreateChild(spawnerGo.transform, $"CitySpawnPoint_{i + 1:00}");
+                    point.transform.position = ToSurface(terrain, points[i], 0.25f);
+                    WorldSpawnPoint spawnPoint = GetOrAdd<WorldSpawnPoint>(point);
+                    SerializedObject spawnSo = new SerializedObject(spawnPoint);
+                    SetInt(spawnSo, "kind", (int)SpawnPointKind.Zombie);
+                    spawnSo.ApplyModifiedPropertiesWithoutUndo();
+                    spawnPoints.Add(point.transform);
+                }
+
+                SerializedObject so = new SerializedObject(spawner);
+                SetObject(so, "zombiePrefab", cityBrutePrefab.GetComponent<ZombieAI>());
+                SerializedProperty pointArray = so.FindProperty("spawnPoints");
+                if (pointArray != null)
+                {
+                    pointArray.arraySize = spawnPoints.Count;
+                    for (int i = 0; i < spawnPoints.Count; i++)
+                    {
+                        pointArray.GetArrayElementAtIndex(i).objectReferenceValue = spawnPoints[i];
+                    }
+                }
+
+                SetInt(so, "maxAliveDay", 16);
+                SetInt(so, "maxAliveNight", 30);
+                SetFloat(so, "nightSpawnMultiplier", 2.0f);
+                SetFloat(so, "respawnInterval", 3.25f);
+                SetFloat(so, "respawnIntervalJitter", 0.8f);
+                SetInt(so, "initialSpawnCount", 10);
+                SetFloat(so, "minSpawnDistanceFromTarget", 28f);
+                SetFloat(so, "spawnPositionJitter", 5.5f);
+                SetInt(so, "nightInitialSpawnBonus", 8);
+                SetObject(so, "target", player);
+                SetObject(so, "eventHub", hub);
+                SetObject(so, "dayNight", dayNight);
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            GameObject cityBossRoot = GetOrCreateChild(world, "CityBosses");
+            for (int i = cityBossRoot.transform.childCount - 1; i >= 0; i--)
+            {
+                Object.DestroyImmediate(cityBossRoot.transform.GetChild(i).gameObject);
+            }
+
+            if (bossPrefab != null)
+            {
+                Vector3[] bossPositions =
+                {
+                    new Vector3(516f, 0f, 166f),
+                    new Vector3(448f, 0f, 214f)
+                };
+
+                for (int i = 0; i < bossPositions.Length; i++)
+                {
+                    GameObject boss = PrefabUtility.InstantiatePrefab(bossPrefab, scene) as GameObject;
+                    if (boss == null)
+                    {
+                        boss = Object.Instantiate(bossPrefab);
+                        SceneManager.MoveGameObjectToScene(boss, scene);
+                    }
+
+                    boss.name = $"CityBoss_{i + 1:00}";
+                    boss.transform.SetParent(cityBossRoot.transform, true);
+                    boss.transform.position = ToSurface(terrain, bossPositions[i], 0.1f);
+                    boss.transform.rotation = Quaternion.Euler(0f, i == 0 ? 225f : 70f, 0f);
+                    boss.transform.localScale = Vector3.one * 0.92f;
+                    SetEnemyLayerAndTag(boss);
+
+                    HealthComponent health = boss.GetComponent<HealthComponent>();
+                    if (health != null)
+                    {
+                        SerializedObject healthSo = new SerializedObject(health);
+                        SetFloat(healthSo, "maxHealth", 520f + i * 95f);
+                        SetBool(healthSo, "destroyOnDeath", false);
+                        SetBool(healthSo, "disableGameObjectOnDeath", false);
+                        healthSo.ApplyModifiedPropertiesWithoutUndo();
+                    }
+
+                    BossAI bossAi = boss.GetComponent<BossAI>();
+                    if (bossAi != null)
+                    {
+                        SerializedObject bossSo = new SerializedObject(bossAi);
+                        SetString(bossSo, "bossId", $"boss.city.{i + 1:00}");
+                        SetFloat(bossSo, "moveSpeed", 3.35f + i * 0.15f);
+                        SetFloat(bossSo, "chaseRange", 54f);
+                        SetFloat(bossSo, "meleeDamage", 24f + i * 4f);
+                        SetFloat(bossSo, "spitDamage", 28f + i * 5f);
+                        SetFloat(bossSo, "spitRange", 27f);
+                        SetObject(bossSo, "target", player);
+                        SetObject(bossSo, "eventHub", hub);
+                        SetObject(bossSo, "dayNight", dayNight);
+                        bossSo.ApplyModifiedPropertiesWithoutUndo();
+                    }
+                }
+            }
+
+            cityBossRoot.SetActive(false);
+            SetRuntimeNavMeshActivations(navBootstrap, world);
+        }
+
         private static void ConfigureBoss(Scene scene, Transform app, Transform world, Transform player, GameEventHub hub, DayNightCycleManager dayNight, GameObject bossPrefab)
         {
             Terrain terrain = Object.FindFirstObjectByType<Terrain>();
@@ -538,6 +739,41 @@ namespace LiteRealm.EditorTools
 
             point.y = terrain.SampleHeight(point) + terrain.transform.position.y + offset;
             return point;
+        }
+
+        private static void SetRuntimeNavMeshActivations(RuntimeNavMeshBootstrap navBootstrap, Transform world)
+        {
+            if (navBootstrap == null || world == null)
+            {
+                return;
+            }
+
+            List<GameObject> targets = new List<GameObject>();
+            AddActivationTarget(targets, world.Find("EnemyPatrols"));
+            AddActivationTarget(targets, world.Find("CityBosses"));
+
+            SerializedObject navSo = new SerializedObject(navBootstrap);
+            SerializedProperty activateAfterBuild = navSo.FindProperty("activateAfterBuild");
+            if (activateAfterBuild != null)
+            {
+                activateAfterBuild.arraySize = targets.Count;
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    activateAfterBuild.GetArrayElementAtIndex(i).objectReferenceValue = targets[i];
+                }
+            }
+
+            navSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void AddActivationTarget(List<GameObject> targets, Transform target)
+        {
+            if (target == null || targets.Contains(target.gameObject))
+            {
+                return;
+            }
+
+            targets.Add(target.gameObject);
         }
 
         private static void SetString(SerializedObject so, string propertyName, string value)

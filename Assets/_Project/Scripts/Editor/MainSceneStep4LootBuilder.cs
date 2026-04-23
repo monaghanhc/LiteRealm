@@ -736,9 +736,17 @@ namespace LiteRealm.EditorTools
             Vector3[] positions =
             {
                 new Vector3(102f, 0f, 126f),
+                new Vector3(150f, 0f, 136f),
+                new Vector3(180f, 0f, 151f),
+                new Vector3(210f, 0f, 178f),
                 new Vector3(226f, 0f, 205f),
                 new Vector3(352f, 0f, 292f),
-                new Vector3(494f, 0f, 492f)
+                new Vector3(494f, 0f, 492f),
+                new Vector3(418f, 0f, 126f),
+                new Vector3(489f, 0f, 168f),
+                new Vector3(532f, 0f, 202f),
+                new Vector3(454f, 0f, 220f),
+                new Vector3(522f, 0f, 120f)
             };
 
             for (int i = 0; i < positions.Length; i++)
